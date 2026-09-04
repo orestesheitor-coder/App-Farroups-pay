@@ -1,4 +1,8 @@
 node_modules/
+
+# Projetos nativos gerados pelo prebuild (CNG): não versionamos
+/android/
+/ios/
 .expo/
 dist/
 web-build/

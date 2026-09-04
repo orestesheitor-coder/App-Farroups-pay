@@ -21,7 +21,6 @@
     },
     "android": {
       "package": "br.com.farroupilha.farroupspay",
-      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#C4122F"
       }

@@ -31,6 +31,37 @@ npm run typecheck  # TypeScript em modo estrito
 npm test           # regras de negócio, ledger e formatação
 ```
 
+## Gerar um APK
+
+O projeto usa *Continuous Native Generation*: as pastas `android/` e `ios/` não são
+versionadas, o Expo as gera na hora do build. Há dois caminhos.
+
+**Na nuvem, sem instalar Android Studio** (recomendado — sai um `.apk` para baixar):
+
+```bash
+npm install -g eas-cli
+eas login                                   # conta Expo gratuita
+eas build:configure                         # só na primeira vez, vincula o projeto
+eas build --platform android --profile preview
+```
+
+O perfil `preview` já está configurado em `eas.json` para gerar **APK** (e não AAB),
+instalável direto no aparelho. Ao terminar, o EAS devolve um link de download e um QR
+Code. A fila gratuita costuma levar de 10 a 25 minutos.
+
+**Localmente**, com Android Studio (SDK 36) e JDK 17+ instalados:
+
+```bash
+npx expo run:android --variant release      # compila e instala no aparelho conectado
+# ou, para ficar com o arquivo em mãos:
+npx expo prebuild --platform android
+cd android && ./gradlew assembleRelease
+# APK em android/app/build/outputs/apk/release/
+```
+
+Um APK de release precisa de assinatura: o EAS gera e guarda a keystore para você; no
+build local, o Gradle usa a keystore de debug se você não configurar uma própria.
+
 ## Contas de demonstração
 
 Senha de todas: `farroupilha`. A tela de login tem atalhos para cada uma.
