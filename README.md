@@ -31,6 +31,21 @@ npm run typecheck  # TypeScript em modo estrito
 npm test           # regras de negócio, ledger e formatação
 ```
 
+## Demonstração sem instalar nada
+
+`demo/farroups-pay-ao-vivo.html` é o app inteiro reescrito em um único arquivo HTML,
+rodando dentro de um chassi Android simulado — para apresentar em reunião sem
+instalar Expo, SDK ou emulador. Basta abrir o arquivo no navegador.
+
+É interativo de verdade: recarga por Pix, pagamento nas três lojas, PIN acima de
+R$ 50,00, limite diário, bloqueio de cartão, estorno pelo caixa e o painel do
+colégio. As regras de autorização são as mesmas de `src/domain/regras.ts`, com as
+mesmas mensagens de recusa, e cada operação escreve no ledger de dupla entrada
+exibido ao lado do aparelho.
+
+Não é o app de produção: é uma vitrine de um arquivo só, com dados fictícios e sem
+backend. O app de verdade continua sendo o projeto Expo deste repositório.
+
 ## Gerar um APK
 
 O projeto usa *Continuous Native Generation*: as pastas `android/` e `ios/` não são

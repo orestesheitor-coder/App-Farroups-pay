@@ -1,0 +1,2183 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Demonstração interativa do Farroups-pay, a carteira digital do Colégio Farroupilha, num aparelho Android simulado.">
+<title>Farroups-pay ao vivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Sora:wght@400;500;600;700&display=swap">
+
+<style>
+/* ============================================================
+   PALCO — a moldura em volta do aparelho.
+   Tokens do palco são independentes dos tokens do app.
+   ============================================================ */
+:root {
+  --palco: #EDEBE7;
+  --palco-2: #E3E0DA;
+  --palco-superficie: #FFFFFF;
+  --palco-texto: #1A1815;
+  --palco-suave: #6E6A63;
+  --palco-linha: rgba(26, 24, 21, 0.12);
+  --palco-marca: #C4122F;
+  --palco-credito: #0E7C5A;
+  --palco-debito: #C0392B;
+  --palco-sombra: rgba(20, 18, 16, 0.18);
+  --chassi: #1C1B1F;
+  --chassi-borda: #35343A;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --palco: #121115;
+    --palco-2: #0C0B0E;
+    --palco-superficie: #1A191E;
+    --palco-texto: #EAE8E4;
+    --palco-suave: #99958D;
+    --palco-linha: rgba(255, 255, 255, 0.12);
+    --palco-marca: #F0455C;
+    --palco-credito: #3ECF9B;
+    --palco-debito: #FF7A66;
+    --palco-sombra: rgba(0, 0, 0, 0.55);
+    --chassi: #08080A;
+    --chassi-borda: #2A2930;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --palco: #121115;
+  --palco-2: #0C0B0E;
+  --palco-superficie: #1A191E;
+  --palco-texto: #EAE8E4;
+  --palco-suave: #99958D;
+  --palco-linha: rgba(255, 255, 255, 0.12);
+  --palco-marca: #F0455C;
+  --palco-credito: #3ECF9B;
+  --palco-debito: #FF7A66;
+  --palco-sombra: rgba(0, 0, 0, 0.55);
+  --chassi: #08080A;
+  --chassi-borda: #2A2930;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1100px 620px at 18% -10%, var(--palco-2), transparent 70%),
+    var(--palco);
+  color: var(--palco-texto);
+  font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  min-height: 100vh;
+}
+
+.palco {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 24px 56px;
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+
+.cabecalho {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 28px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--palco-linha);
+}
+.cabecalho h1 {
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  margin: 0;
+  font-weight: 600;
+  text-wrap: balance;
+}
+.cabecalho p {
+  margin: 6px 0 0;
+  color: var(--palco-suave);
+  font-size: 14px;
+  max-width: 62ch;
+  line-height: 1.5;
+}
+.aovivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--palco-marca);
+  margin-left: auto;
+  white-space: nowrap;
+}
+.aovivo span {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--palco-marca);
+  animation: pulsar 2.4s ease-in-out infinite;
+}
+@keyframes pulsar { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* ---------- Aparelho ---------- */
+.aparelho-area { display: flex; justify-content: center; }
+.aparelho {
+  position: relative;
+  width: 393px;
+  padding: 12px;
+  border-radius: 52px;
+  background: linear-gradient(160deg, var(--chassi-borda), var(--chassi) 45%);
+  box-shadow:
+    0 40px 80px -30px var(--palco-sombra),
+    0 2px 0 0 rgba(255, 255, 255, 0.06) inset;
+}
+.aparelho::before,
+.aparelho::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--chassi-borda);
+}
+.aparelho::before { top: 150px; height: 34px; }
+.aparelho::after { top: 200px; height: 66px; }
+
+.vidro {
+  position: relative;
+  width: 369px;
+  height: 800px;
+  border-radius: 42px;
+  overflow: hidden;
+  background: var(--app-fundo);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   APP — tokens copiados de src/theme/tokens.ts
+   ============================================================ */
+.vidro,
+.vidro[data-tema="claro"] {
+  --app-fundo: #FAFAF8;
+  --app-superficie: #FFFFFF;
+  --app-superficie-alt: #F1F1ED;
+  --app-toque: #E9E9E4;
+  --app-texto: #14161A;
+  --app-suave: #6B7076;
+  --app-borda: rgba(20, 22, 26, 0.10);
+  --app-marca: #C4122F;
+  --app-marca-botao: #C4122F;
+  --app-marca-suave: #FBECEE;
+  --app-sucesso: #0E7C5A;
+  --app-sucesso-suave: #E4F5EE;
+  --app-alerta: #C0392B;
+  --app-alerta-suave: #FDECE8;
+  --app-cartao-topo: #C4122F;
+  --app-cartao-base: #7E0A1E;
+  --app-sombra: rgba(20, 22, 26, 0.07);
+  --app-status: #14161A;
+}
+.vidro[data-tema="escuro"] {
+  --app-fundo: #0E0F12;
+  --app-superficie: #17191E;
+  --app-superficie-alt: #1F222A;
+  --app-toque: #282C35;
+  --app-texto: #F4F4F1;
+  --app-suave: #9AA0A8;
+  --app-borda: rgba(255, 255, 255, 0.11);
+  --app-marca: #F0455C;
+  --app-marca-botao: #C81433;
+  --app-marca-suave: #2A1218;
+  --app-sucesso: #3ECF9B;
+  --app-sucesso-suave: #12271F;
+  --app-alerta: #FF7A66;
+  --app-alerta-suave: #2B1512;
+  --app-cartao-topo: #B9152F;
+  --app-cartao-base: #5E0716;
+  --app-sombra: rgba(0, 0, 0, 0.5);
+  --app-status: #F4F4F1;
+}
+
+.barra-status {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 22px 0 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: "Sora", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-status);
+  background: var(--app-fundo);
+  font-variant-numeric: tabular-nums;
+}
+.barra-status .icones { display: flex; align-items: center; gap: 6px; }
+
+.tela {
+  position: relative;
+  flex: 1 1 auto;
+  overflow: hidden;
+  background: var(--app-fundo);
+  font-family: "Sora", system-ui, sans-serif;
+  color: var(--app-texto);
+}
+.rolagem {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 20px 24px;
+  scrollbar-width: thin;
+}
+.rolagem::-webkit-scrollbar { width: 0; }
+
+.entrando { animation: deslizar 260ms cubic-bezier(0.22, 0.8, 0.3, 1); }
+@keyframes deslizar {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+.subindo { animation: subir 260ms cubic-bezier(0.22, 0.8, 0.3, 1); }
+@keyframes subir {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+
+.barra-abas {
+  flex: 0 0 auto;
+  display: flex;
+  background: var(--app-superficie);
+  border-top: 1px solid var(--app-borda);
+  padding: 8px 0 6px;
+  font-family: "Sora", system-ui, sans-serif;
+}
+.barra-abas button {
+  flex: 1;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--app-suave);
+  font: 600 11px "Sora", sans-serif;
+  padding: 0;
+}
+.barra-abas button[aria-selected="true"] { color: var(--app-marca); }
+.barra-abas svg { width: 22px; height: 22px; }
+
+.gestos {
+  flex: 0 0 auto;
+  height: 22px;
+  background: var(--app-superficie);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gestos i {
+  display: block;
+  width: 118px; height: 4px;
+  border-radius: 2px;
+  background: var(--app-texto);
+  opacity: 0.35;
+}
+
+/* ---------- Componentes do app ---------- */
+.tela h2 { font: 700 27px/1.15 "Sora", sans-serif; letter-spacing: -0.7px; margin: 4px 0 6px; }
+.tela h3 { font: 600 17px/1.3 "Sora", sans-serif; letter-spacing: -0.2px; margin: 0; }
+.legenda { font-size: 13px; line-height: 1.45; color: var(--app-suave); margin: 0; }
+.micro {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.8px;
+  text-transform: uppercase; color: var(--app-suave); margin: 0;
+}
+
+.cartao-sup {
+  background: var(--app-superficie);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 8px 18px -8px var(--app-sombra);
+}
+.plano { background: var(--app-superficie-alt); border-radius: 16px; padding: 14px; }
+
+.valor { display: flex; align-items: flex-end; gap: 3px; font-variant-numeric: tabular-nums; }
+.valor .cifra { font-size: 19px; font-weight: 500; padding-bottom: 6px; }
+.valor .inteiro { font-size: 42px; font-weight: 700; line-height: 1.05; letter-spacing: -1.4px; }
+.valor .centavos { font-size: 21px; font-weight: 600; padding-bottom: 5px; }
+.valor.medio .inteiro { font-size: 30px; letter-spacing: -0.9px; }
+.valor.medio .cifra { font-size: 15px; padding-bottom: 4px; }
+.valor.medio .centavos { font-size: 16px; padding-bottom: 3px; }
+
+.botao {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 52px; padding: 0 18px;
+  border: 0; border-radius: 14px;
+  background: var(--app-marca-botao); color: #FFF;
+  font: 600 15px "Sora", sans-serif;
+  cursor: pointer; width: 100%;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+.botao:active { transform: scale(0.975); }
+.botao[disabled] { opacity: 0.45; cursor: not-allowed; }
+.botao.secundario { background: var(--app-superficie-alt); color: var(--app-texto); }
+.botao.fantasma { background: transparent; color: var(--app-texto); border: 1px solid var(--app-borda); }
+.botao.perigo { background: var(--app-alerta-suave); color: var(--app-alerta); }
+.botao.compacto { min-height: 44px; font-size: 13.5px; padding: 0 12px; gap: 6px; white-space: nowrap; }
+
+.pilula {
+  min-height: 38px; padding: 0 14px;
+  border: 0; border-radius: 999px;
+  background: var(--app-superficie-alt); color: var(--app-suave);
+  font: 600 13px "Sora", sans-serif; cursor: pointer;
+  transition: background 180ms ease, color 180ms ease;
+}
+.pilula[aria-pressed="true"] { background: var(--app-texto); color: var(--app-fundo); }
+
+.selo {
+  display: inline-block; padding: 4px 9px; border-radius: 999px;
+  font: 600 10.5px "Sora", sans-serif; letter-spacing: 0.7px; text-transform: uppercase;
+  background: var(--app-superficie-alt); color: var(--app-suave);
+}
+.selo.sucesso { background: var(--app-sucesso-suave); color: var(--app-sucesso); }
+.selo.alerta { background: var(--app-alerta-suave); color: var(--app-alerta); }
+.selo.marca { background: var(--app-marca-suave); color: var(--app-marca); }
+
+.emblema {
+  width: 44px; height: 44px; flex: 0 0 auto;
+  border-radius: 14px;
+  background: var(--app-superficie-alt);
+  display: flex; align-items: center; justify-content: center;
+  font: 600 14px "Sora", sans-serif;
+}
+.emblema.credito { background: var(--app-sucesso-suave); color: var(--app-sucesso); }
+.emblema.recusa { background: var(--app-alerta-suave); color: var(--app-alerta); }
+.emblema.marca { background: var(--app-marca-suave); color: var(--app-marca); }
+
+.linha {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0; width: 100%;
+  background: none; border: 0; border-top: 1px solid var(--app-borda);
+  text-align: left; color: inherit; font-family: inherit; cursor: pointer;
+}
+.linha.primeira { border-top: 0; }
+.linha .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.linha .titulo { font: 600 15px "Sora", sans-serif; }
+.linha .sub { font-size: 12.5px; color: var(--app-suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.linha .cifra-dir { font: 600 15px "Sora", sans-serif; font-variant-numeric: tabular-nums; }
+.riscado { text-decoration: line-through; color: var(--app-suave); }
+
+.pilha { display: flex; flex-direction: column; gap: 16px; }
+.pilha-sm { display: flex; flex-direction: column; gap: 10px; }
+.duas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.faixa { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.faixa::-webkit-scrollbar { display: none; }
+
+.trilha { height: 6px; border-radius: 3px; background: var(--app-superficie-alt); overflow: hidden; }
+.trilha i { display: block; height: 100%; border-radius: 3px; background: var(--app-marca); transition: width 280ms ease; }
+.trilha.esgotada i { background: var(--app-alerta); }
+
+/* Cartão do aluno */
+.cartao-3d {
+  position: relative;
+  border-radius: 24px;
+  padding: 20px;
+  min-height: 186px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  color: #FFF;
+  background: linear-gradient(135deg, var(--app-cartao-topo), var(--app-cartao-base));
+  box-shadow: 0 22px 40px -22px var(--app-cartao-base);
+  overflow: hidden;
+  transform: perspective(900px) rotateY(-2.5deg) rotateX(1.2deg);
+  animation: inclinar 9s ease-in-out infinite alternate;
+}
+.cartao-3d.bloqueado {
+  background: linear-gradient(135deg, #8A8E95, #5B6067);
+  box-shadow: 0 22px 40px -24px rgba(0,0,0,0.5);
+}
+@keyframes inclinar {
+  from { transform: perspective(900px) rotateY(-3deg) rotateX(1.4deg); }
+  to { transform: perspective(900px) rotateY(3deg) rotateX(-1.4deg); }
+}
+.cartao-3d::after {
+  content: ""; position: absolute; width: 260px; height: 260px; border-radius: 50%;
+  background: rgba(255,255,255,0.08); right: -92px; top: -112px;
+}
+.cartao-3d .chip {
+  width: 42px; height: 30px; border-radius: 7px;
+  background: rgba(255,255,255,0.28); border: 1px solid rgba(255,255,255,0.36);
+}
+.cartao-3d .numero { font: 600 21px "Sora", sans-serif; letter-spacing: 3px; font-variant-numeric: tabular-nums; }
+.cartao-3d .rot { font: 600 10px "Sora", sans-serif; letter-spacing: 0.8px; color: rgba(255,255,255,0.72); }
+.cartao-3d .dado { font: 600 13px "Sora", sans-serif; }
+
+/* NFC */
+.nfc { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 0; }
+.nfc .onda {
+  width: 84px; height: 84px; border-radius: 50%;
+  border: 2px solid var(--app-marca);
+  display: flex; align-items: center; justify-content: center;
+  animation: onda 1.3s ease-out infinite;
+}
+@keyframes onda {
+  0% { transform: scale(0.86); opacity: 0.95; }
+  100% { transform: scale(1.28); opacity: 0; }
+}
+
+.qr { padding: 14px; background: #FFF; border-radius: 18px; border: 1px solid var(--app-borda); }
+.qr svg { display: block; }
+
+.aviso {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px; border-radius: 14px;
+  background: var(--app-superficie-alt);
+  font-size: 12.5px; line-height: 1.45; color: var(--app-suave);
+}
+.aviso.alerta { background: var(--app-alerta-suave); color: var(--app-alerta); }
+.aviso.sucesso { background: var(--app-sucesso-suave); color: var(--app-sucesso); }
+.aviso svg { flex: 0 0 auto; margin-top: 1px; }
+
+.pontos-pin { display: flex; gap: 14px; justify-content: center; padding: 12px 0; }
+.pontos-pin i {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid var(--app-borda); display: block;
+}
+.pontos-pin i.cheio { background: var(--app-texto); border-color: var(--app-texto); }
+.pontos-pin.erro i { border-color: var(--app-alerta); }
+.pontos-pin.erro i.cheio { background: var(--app-alerta); }
+
+.teclado { display: grid; grid-template-columns: repeat(3, 1fr); }
+.teclado button {
+  min-height: 58px; border: 0; background: none; cursor: pointer;
+  font: 600 22px "Sora", sans-serif; color: var(--app-texto);
+  border-radius: 14px; transition: background 140ms ease;
+}
+.teclado button:active { background: var(--app-toque); }
+
+.folha-fundo {
+  position: absolute; inset: 0; z-index: 5;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: flex-end;
+  animation: aparecer 200ms ease;
+}
+@keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+.folha {
+  width: 100%;
+  background: var(--app-fundo);
+  border-radius: 24px 24px 0 0;
+  padding: 12px 20px 20px;
+  animation: subir 240ms cubic-bezier(0.22, 0.8, 0.3, 1);
+  max-height: 88%; overflow-y: auto;
+}
+.folha .puxador { width: 40px; height: 4px; border-radius: 2px; background: var(--app-borda); margin: 0 auto 14px; }
+
+.aviso-topo {
+  position: absolute; top: 10px; left: 16px; right: 16px; z-index: 8;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: 14px;
+  background: var(--app-superficie); border: 1px solid var(--app-borda);
+  box-shadow: 0 12px 26px -12px var(--app-sombra);
+  font: 600 13px "Sora", sans-serif;
+  animation: subir 240ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.grafico-barras { display: flex; flex-direction: column; gap: 10px; }
+.grafico-barras .item { display: flex; flex-direction: column; gap: 5px; }
+.grafico-barras .rot { display: flex; justify-content: space-between; font-size: 12.5px; }
+.grafico-barras .rot b { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.interruptor {
+  width: 46px; height: 28px; border-radius: 999px; border: 0; cursor: pointer;
+  background: var(--app-toque); position: relative; flex: 0 0 auto;
+  transition: background 200ms ease;
+}
+.interruptor[aria-checked="true"] { background: var(--app-marca); }
+.interruptor i {
+  position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px; border-radius: 50%; background: #FFF;
+  transition: transform 200ms cubic-bezier(0.22, 0.8, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.interruptor[aria-checked="true"] i { transform: translateX(18px); }
+
+.radio {
+  width: 22px; height: 22px; border-radius: 50%; flex: 0 0 auto;
+  border: 2px solid var(--app-borda);
+  display: flex; align-items: center; justify-content: center;
+}
+.radio[data-on="1"] { border-color: var(--app-marca); }
+.radio[data-on="1"]::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--app-marca); }
+
+.item-pdv {
+  min-height: 46px; padding: 6px 12px; border-radius: 14px;
+  border: 1px solid var(--app-borda); background: transparent;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  font-family: "Sora", sans-serif; cursor: pointer; color: var(--app-texto);
+  transition: border-color 160ms ease, background 160ms ease;
+}
+.item-pdv:active { background: var(--app-toque); }
+.item-pdv[data-escolhido="1"] { border-color: var(--app-marca); }
+.item-pdv b { font-size: 13px; font-weight: 600; }
+.item-pdv span { font-size: 12px; color: var(--app-suave); font-variant-numeric: tabular-nums; }
+
+.marca-app {
+  width: 52px; height: 52px; border-radius: 16px;
+  background: var(--app-marca); color: #FFF;
+  display: flex; align-items: center; justify-content: center;
+  font: 700 27px "Sora", sans-serif;
+}
+
+/* ---------- Console lateral ---------- */
+.console { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.bloco {
+  background: var(--palco-superficie);
+  border: 1px solid var(--palco-linha);
+  border-radius: 16px;
+  padding: 18px;
+}
+.bloco > header {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  margin-bottom: 14px;
+}
+.bloco h2 {
+  font-size: 12px; font-weight: 600; letter-spacing: 1.1px; text-transform: uppercase;
+  margin: 0; color: var(--palco-suave);
+}
+.bloco .nota { font-size: 12px; color: var(--palco-suave); margin: 0; }
+
+.perfis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.perfil {
+  display: flex; flex-direction: column; gap: 3px; align-items: flex-start;
+  padding: 11px 13px; border-radius: 12px; cursor: pointer;
+  border: 1px solid var(--palco-linha); background: transparent;
+  color: var(--palco-texto); font-family: inherit; text-align: left;
+  transition: border-color 180ms ease, background 180ms ease;
+}
+.perfil:hover { background: var(--palco-2); }
+.perfil[aria-pressed="true"] { border-color: var(--palco-marca); background: var(--palco-2); }
+.perfil b { font-size: 13.5px; font-weight: 600; }
+.perfil span { font-size: 11.5px; color: var(--palco-suave); }
+
+.roteiro { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.roteiro li {
+  display: flex; gap: 11px; align-items: flex-start;
+  padding: 9px 0; font-size: 13.5px; line-height: 1.4;
+  border-top: 1px solid var(--palco-linha);
+}
+.roteiro li:first-child { border-top: 0; }
+.roteiro .caixa {
+  width: 18px; height: 18px; flex: 0 0 auto; margin-top: 1px;
+  border-radius: 6px; border: 1.5px solid var(--palco-linha);
+  display: flex; align-items: center; justify-content: center;
+}
+.roteiro li[data-feito="1"] { color: var(--palco-suave); }
+.roteiro li[data-feito="1"] .caixa { background: var(--palco-credito); border-color: var(--palco-credito); }
+.roteiro li[data-feito="1"] .rotulo { text-decoration: line-through; }
+.roteiro .dica { display: block; font-size: 12px; color: var(--palco-suave); margin-top: 2px; }
+
+.ledger { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; }
+.ledger .lanc {
+  border-top: 1px solid var(--palco-linha);
+  padding: 10px 0;
+  animation: entrar-log 320ms ease;
+}
+.ledger .lanc:first-child { border-top: 0; }
+@keyframes entrar-log { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.ledger .cab {
+  display: flex; justify-content: space-between; gap: 10px;
+  font-family: "IBM Plex Sans", sans-serif; font-size: 12.5px; font-weight: 600;
+  margin-bottom: 6px;
+}
+.ledger .cab time { color: var(--palco-suave); font-weight: 400; font-variant-numeric: tabular-nums; }
+.ledger .l {
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) auto;
+  gap: 10px; padding: 2px 0; color: var(--palco-suave);
+}
+.ledger .l b { font-weight: 500; }
+.ledger .l .d { color: var(--palco-debito); }
+.ledger .l .c { color: var(--palco-credito); }
+.ledger .l .v { font-variant-numeric: tabular-nums; color: var(--palco-texto); }
+.ledger .l .conta { overflow: hidden; text-overflow: ellipsis; }
+.ledger .vazio { color: var(--palco-suave); font-family: "IBM Plex Sans", sans-serif; font-size: 13px; }
+.rolo { max-height: 340px; overflow-y: auto; }
+
+.custodia { display: flex; align-items: baseline; gap: 10px; }
+.custodia b {
+  font-family: "IBM Plex Mono", monospace; font-size: 22px; font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.custodia span { font-size: 12px; color: var(--palco-suave); }
+
+.acoes-palco { display: flex; flex-wrap: wrap; gap: 8px; }
+.acao {
+  border: 1px solid var(--palco-linha); background: transparent;
+  border-radius: 999px; padding: 8px 14px; cursor: pointer;
+  font: 500 12.5px "IBM Plex Sans", sans-serif; color: var(--palco-texto);
+  transition: background 180ms ease;
+}
+.acao:hover { background: var(--palco-2); }
+
+.rodape {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--palco-linha);
+  padding-top: 18px;
+  font-size: 12.5px; color: var(--palco-suave); line-height: 1.6;
+  display: flex; flex-wrap: wrap; gap: 6px 24px;
+}
+
+button:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--palco-marca);
+  outline-offset: 2px;
+}
+.vidro button:focus-visible { outline-color: var(--app-marca); }
+
+@media (max-width: 980px) {
+  .palco { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .aparelho-area { order: -1; }
+}
+@media (max-width: 430px) {
+  .palco { padding: 20px 12px 40px; }
+  .aparelho { width: 100%; padding: 8px; border-radius: 38px; }
+  .vidro { width: 100%; height: 720px; border-radius: 32px; }
+  .perfis { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="palco">
+  <header class="cabecalho">
+    <div>
+      <h1>Farroups-pay ao vivo</h1>
+      <p>O app de pagamentos do Colégio Farroupilha rodando num aparelho Android simulado. Tudo é clicável: recarregue por Pix, pague nas três lojas, estoure o limite diário, bloqueie o cartão. Cada operação escreve no ledger de dupla entrada ao lado, em tempo real.</p>
+    </div>
+    <p class="aovivo"><span></span> Demonstração interativa</p>
+  </header>
+
+  <div class="aparelho-area">
+    <div class="aparelho">
+      <div class="vidro" id="vidro" data-tema="claro">
+        <div class="barra-status">
+          <span id="relogio">08:42</span>
+          <span class="icones" aria-hidden="true">
+            <svg width="15" height="12" viewBox="0 0 15 12" fill="none"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h1.6v10.5H13z" fill="currentColor"/></svg>
+            <svg width="15" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 10.4 1.2 4.2a10 10 0 0 1 13.6 0z" fill="currentColor" opacity=".95"/></svg>
+            <svg width="22" height="12" viewBox="0 0 24 12" fill="none"><rect x="1" y="1.5" width="18" height="9" rx="2.5" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="3.5" width="13" height="5" rx="1" fill="currentColor"/><path d="M21 4.5v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </span>
+        </div>
+
+        <main class="tela" id="tela" aria-live="polite"></main>
+
+        <nav class="barra-abas" id="abas" aria-label="Navegação do app"></nav>
+        <div class="gestos"><i></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="console">
+    <section class="bloco">
+      <header>
+        <h2>Quem está usando</h2>
+        <p class="nota">Troca instantânea</p>
+      </header>
+      <div class="perfis" id="perfis"></div>
+    </section>
+
+    <section class="bloco">
+      <header>
+        <h2>Roteiro da demonstração</h2>
+        <p class="nota" id="roteiro-contagem">0 de 5</p>
+      </header>
+      <ul class="roteiro" id="roteiro"></ul>
+    </section>
+
+    <section class="bloco">
+      <header>
+        <h2>Ledger ao vivo</h2>
+        <p class="nota">Dupla entrada, imutável</p>
+      </header>
+      <div class="custodia">
+        <b id="custodia">R$ 129,00</b>
+        <span>em custódia do colégio</span>
+      </div>
+      <div class="rolo" style="margin-top:14px">
+        <div class="ledger" id="ledger"></div>
+      </div>
+      <div class="acoes-palco" style="margin-top:16px">
+        <button class="acao" data-palco="reiniciar" type="button">Reiniciar demonstração</button>
+        <button class="acao" data-palco="tema" type="button">Alternar tema do app</button>
+      </div>
+    </section>
+  </div>
+
+  <footer class="rodape">
+    <span>Dados fictícios para demonstração — nenhuma transação real.</span>
+    <span>Regras, limites e mensagens de recusa idênticos aos de <code>src/domain/regras.ts</code>.</span>
+    <span>PIN da demonstração: 1234</span>
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   1. DADOS — espelham src/services/mock/seed.ts
+   ========================================================= */
+const LOJAS = [
+  { id: "bar-do-ze", nome: "Bar do Zé", sigla: "BZ", desc: "Lanches, salgados e bebidas", abre: "07:00", fecha: "18:00",
+    itens: [["Pão de queijo",600],["Coxinha",900],["Misto quente",1200],["Suco natural",800],["Água",400],["Combo lanche",1800]] },
+  { id: "la-brunita", nome: "La Brunita", sigla: "LB", desc: "Cafeteria e confeitaria", abre: "07:30", fecha: "17:30",
+    itens: [["Café expresso",700],["Cappuccino",1100],["Croissant",1400],["Cookie",900],["Bolo de cenoura",1200],["Chocolate quente",1300]] },
+  { id: "saude-no-copo", nome: "Saúde no Copo", sigla: "SC", desc: "Sucos, açaí e saladas de fruta", abre: "08:00", fecha: "17:00",
+    itens: [["Suco detox",1500],["Açaí 300ml",1900],["Salada de frutas",1300],["Vitamina de banana",1400],["Água de coco",900],["Wrap de frango",2200]] }
+];
+
+const LIMITE_SEM_PIN = 5000;
+const PIN_DEMO = "1234";
+
+function estadoInicial() {
+  const agora = Date.now();
+  const h = (min) => new Date(agora - min * 60000).toISOString();
+  return {
+    perfil: "aluno",
+    tela: "carteira",
+    tema: window.matchMedia("(prefers-color-scheme: dark)").matches ? "escuro" : "claro",
+    saldoOculto: false,
+    alunoAtivo: "helena",
+    alunos: {
+      helena: {
+        nome: "Helena Ribeiro Antunes", curto: "Helena", turma: "8º ano A", matricula: "2026081",
+        conta: "cta_helena", saldo: 8700,
+        limites: { diario: 5000, transacao: 3000, bloqueadas: [] },
+        cartoes: [
+          { id: "crt_v", tipo: "virtual", ultimos4: "4417", ativo: true, bloqueado: false },
+          { id: "crt_f", tipo: "fisico", ultimos4: "8032", ativo: false, bloqueado: false }
+        ]
+      },
+      bento: {
+        nome: "Bento Ribeiro Antunes", curto: "Bento", turma: "5º ano B", matricula: "2026114",
+        conta: "cta_bento", saldo: 4200,
+        limites: { diario: 3000, transacao: 2000, bloqueadas: ["bar-do-ze"] },
+        cartoes: [{ id: "crt_bv", tipo: "virtual", ultimos4: "2290", ativo: true, bloqueado: false }]
+      }
+    },
+    transacoes: [
+      { id: "trx_D4K2", conta: "cta_helena", tipo: "debito", status: "aprovada", valor: 800, loja: "bar-do-ze",
+        desc: "Bar do Zé", itens: [["Suco natural",800]], em: h(126), hoje: true },
+      { id: "trx_P8QM", conta: "cta_helena", tipo: "credito", status: "aprovada", valor: 3100,
+        desc: "Recarga via Pix", metodo: "pix", em: h(1520) },
+      { id: "trx_B2LX", conta: "cta_helena", tipo: "debito", status: "aprovada", valor: 1100, loja: "la-brunita",
+        desc: "La Brunita", itens: [["Cappuccino",1100]], em: h(1680) },
+      { id: "trx_R7VC", conta: "cta_helena", tipo: "debito", status: "aprovada", valor: 1900, loja: "saude-no-copo",
+        desc: "Saúde no Copo", itens: [["Açaí 300ml",1900]], em: h(1740) },
+      { id: "trx_J3NF", conta: "cta_helena", tipo: "debito", status: "aprovada", valor: 600, loja: "bar-do-ze",
+        desc: "Bar do Zé", itens: [["Pão de queijo",600]], em: h(2980) },
+      { id: "trx_W9TD", conta: "cta_bento", tipo: "credito", status: "aprovada", valor: 4200,
+        desc: "Recarga via Pix", metodo: "pix", em: h(1600) }
+    ],
+    lancamentos: [],
+    cobranca: null,
+    // Contexto de fluxo (tela a tela)
+    fluxo: {},
+    roteiro: { recarga: false, compra: false, limite: false, bloqueio: false, estorno: false },
+    aviso: null,
+    folha: null
+  };
+}
+
+let E = estadoInicial();
+
+/* =========================================================
+   2. FORMATAÇÃO — pt-BR, centavos inteiros
+   ========================================================= */
+const nfMoeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const reais = (c) => nfMoeda.format(c / 100).replace(/ /g, " ");
+const partes = (c) => {
+  const v = (Math.abs(c) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const [i, d] = v.split(",");
+  return { i, d };
+};
+const hora = (iso) => new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+const data = (iso) => new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(iso));
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const aluno = () => E.alunos[E.alunoAtivo];
+const loja = (id) => LOJAS.find((l) => l.id === id);
+const cartaoAtivo = (a) => a.cartoes.find((c) => c.ativo) || null;
+const gastoHoje = (a) => E.transacoes
+  .filter((t) => t.conta === a.conta && t.tipo === "debito" && t.status === "aprovada" && t.hoje)
+  .reduce((s, t) => s + t.valor, 0);
+const restanteHoje = (a) => Math.max(0, a.limites.diario - gastoHoje(a));
+
+/* Loja aberta: no relógio do visitante, para a demonstração nunca travar
+   em "fechada", tratamos o horário escolar como sempre vigente. */
+const lojaAberta = () => true;
+
+/* =========================================================
+   3. REGRAS — porte fiel de src/domain/regras.ts
+   ========================================================= */
+function avaliarPagamento({ a, cartao, lj, valor }) {
+  if (!Number.isInteger(valor) || valor <= 0)
+    return { ok: false, motivo: "valor_invalido", msg: "Valor inválido. Peça para o caixa lançar a cobrança de novo." };
+  if (!cartao || !cartao.ativo)
+    return { ok: false, motivo: "cartao_bloqueado", msg: "Nenhum cartão ativo nesta conta." };
+  if (cartao.bloqueado)
+    return { ok: false, motivo: "cartao_bloqueado", msg: "Cartão bloqueado. Desbloqueie no app para voltar a pagar." };
+  if (!lj)
+    return { ok: false, motivo: "loja_nao_autorizada", msg: "Estabelecimento fora da rede Farroups-pay." };
+  if (a.limites.bloqueadas.includes(lj.id))
+    return { ok: false, motivo: "loja_bloqueada", msg: `Compras no ${lj.nome} foram bloqueadas pelo responsável.` };
+  if (!lojaAberta(lj))
+    return { ok: false, motivo: "loja_fechada", msg: `${lj.nome} está fechado agora. Abre às ${lj.abre}.` };
+  if (valor > a.limites.transacao)
+    return { ok: false, motivo: "limite_transacao", msg: `Acima do limite por compra de ${reais(a.limites.transacao)}.` };
+  const resta = restanteHoje(a);
+  if (valor > resta)
+    return { ok: false, motivo: "limite_diario",
+      msg: resta === 0
+        ? `Limite diário de ${reais(a.limites.diario)} atingido. Ele é renovado à meia-noite.`
+        : `Limite diário atingido — restam ${reais(resta)} para hoje.` };
+  if (valor > a.saldo)
+    return { ok: false, motivo: "saldo_insuficiente", msg: `Saldo insuficiente — faltam ${reais(valor - a.saldo)}.` };
+  return { ok: true, exigeAutenticacao: valor > LIMITE_SEM_PIN };
+}
+
+/* =========================================================
+   4. LEDGER — dupla entrada, nada é apagado
+   ========================================================= */
+const CONTAS = {
+  caixa: "ativo:caixa_psp",
+  aluno: (c) => `passivo:aluno:${c}`,
+  loja: (l) => `passivo:loja:${l}`
+};
+
+function lancar(descricao, linhas) {
+  const debitos = linhas.filter((l) => l.t === "D").reduce((s, l) => s + l.v, 0);
+  const creditos = linhas.filter((l) => l.t === "C").reduce((s, l) => s + l.v, 0);
+  if (debitos !== creditos) throw new Error("Lançamento desbalanceado");
+  E.lancamentos.unshift({ id: "lcm_" + Math.random().toString(36).slice(2, 8).toUpperCase(), descricao, linhas, em: new Date().toISOString() });
+}
+
+const custodia = () => E.lancamentos
+  .flatMap((l) => l.linhas)
+  .filter((l) => l.conta.startsWith("passivo:aluno:"))
+  .reduce((s, l) => s + (l.t === "C" ? l.v : -l.v), 0);
+
+/* Semeia o ledger com o saldo que os alunos já têm, para a custódia bater. */
+function semearLedger() {
+  E.lancamentos = [];
+  lancar("Saldo inicial em custódia", [
+    { conta: CONTAS.caixa, t: "D", v: 8700 },
+    { conta: CONTAS.aluno("cta_helena"), t: "C", v: 8700 }
+  ]);
+  lancar("Saldo inicial em custódia", [
+    { conta: CONTAS.caixa, t: "D", v: 4200 },
+    { conta: CONTAS.aluno("cta_bento"), t: "C", v: 4200 }
+  ]);
+}
+
+/* =========================================================
+   5. ÍCONES
+   ========================================================= */
+const IC = {
+  carteira: 'M4 8.5A2.5 2.5 0 0 1 6.5 6H18a2 2 0 0 1 2 2v1M4 8.5v9A2.5 2.5 0 0 0 6.5 20H18a2 2 0 0 0 2-2v-2M20 10.5h-3.5a2.5 2.5 0 0 0 0 5H20z',
+  cartao: 'M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5zM3 10h18M6.5 14.5h3.5',
+  recibo: 'M6 3.5h12v17l-3-2-3 2-3-2-3 2zM9 9h6M9 13h4',
+  perfil: 'M12 12.5a4.25 4.25 0 1 0 0-8.5 4.25 4.25 0 0 0 0 8.5M4.8 20.5c1.2-3.2 3.9-5 7.2-5s6 1.8 7.2 5',
+  usuarios: 'M9.5 11.5a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2M3 20.2c1.1-3 3.5-4.7 6.5-4.7s5.4 1.7 6.5 4.7M16.4 5.3a3.6 3.6 0 0 1 0 6.6M18 15.9c2 .8 3.3 2.2 4 4.3',
+  qr: 'M4.5 4.5h5.5V10H4.5zM14 4.5h5.5V10H14zM4.5 14h5.5v5.5H4.5zM14 14h2.2v2.2H14zM17.3 17.3h2.2v2.2h-2.2zM14 19.5h1.5',
+  grafico: 'M4.5 20V10.5M10 20V4.5M15.5 20v-6.5M21 20H3',
+  mais: 'M12 5.5v13M5.5 12h13',
+  olho: 'M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6',
+  olhoFechado: 'M4 4.5 20 20.5M9.8 6.2A10 10 0 0 1 12 5.8c6 0 9.5 6.2 9.5 6.2a17.6 17.6 0 0 1-3.4 4M6.4 8.2A17.4 17.4 0 0 0 2.5 12S6 18.2 12 18.2c1 0 1.9-.2 2.7-.5',
+  cadeado: 'M7.5 10.5V8a4.5 4.5 0 0 1 9 0v2.5M6 10.5h12a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19v-7A1.5 1.5 0 0 1 6 10.5z',
+  cadeadoAberto: 'M7.5 10.5V8a4.5 4.5 0 0 1 8.6-1.9M6 10.5h12a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19v-7A1.5 1.5 0 0 1 6 10.5z',
+  nfc: 'M6.5 8.6a7.5 7.5 0 0 1 0 6.8M10 6.4a11.5 11.5 0 0 1 0 11.2M13.5 4.4a15.5 15.5 0 0 1 0 15.2',
+  seta: 'M9.5 5.5 16 12l-6.5 6.5',
+  volta: 'M14.5 5.5 8 12l6.5 6.5',
+  check: 'M4.5 12.5 9.8 17.8 19.5 6.8',
+  x: 'M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5',
+  escudo: 'M12 3.4 5.2 6.2v5.6c0 4.3 2.9 7.5 6.8 8.8 3.9-1.3 6.8-4.5 6.8-8.8V6.2z',
+  alerta: 'M12 4.4 21 20H3zM12 10.2v4.4M12 17.1v.1',
+  pix: 'M12 3.3 20.7 12 12 20.7 3.3 12zM12 7.2 16.8 12 12 16.8 7.2 12z',
+  copiar: 'M9.5 8.5h9A1.5 1.5 0 0 1 20 10v9.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 8 19.5V10a1.5 1.5 0 0 1 1.5-1.5zM16 8.5V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5V15a1.5 1.5 0 0 0 1.5 1.5H8',
+  entrada: 'M17 7 7.5 16.5M7.5 10.5v6h6',
+  sino: 'M6.6 10.2a5.4 5.4 0 0 1 10.8 0c0 3.9 1.6 5.4 1.6 5.4H5s1.6-1.5 1.6-5.4zM10 18.5a2.2 2.2 0 0 0 4 0',
+  atualizar: 'M20 12a8 8 0 1 1-2.6-5.9M20.5 4v4.2h-4.2',
+  sair: 'M14.5 5.5H6.8A1.8 1.8 0 0 0 5 7.3v9.4a1.8 1.8 0 0 0 1.8 1.8h7.7M12.5 12H21M17.8 8.2 21.5 12l-3.7 3.8',
+  loja: 'M4 9.5 5.6 4h12.8L20 9.5M5 9.5v9.5A1.5 1.5 0 0 0 6.5 20.5h11a1.5 1.5 0 0 0 1.5-1.5V9.5',
+  relogio: 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17M12 7.5V12l3 1.8'
+};
+const icone = (n, tam = 20, cor = "currentColor", traco = 1.6) =>
+  `<svg width="${tam}" height="${tam}" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="${IC[n]}" stroke="${cor}" stroke-width="${traco}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+/* =========================================================
+   6. BLOCOS DE INTERFACE
+   ========================================================= */
+const valorHtml = (c, { classe = "", sinal = "", oculto = false, cor = "" } = {}) => {
+  const p = partes(c);
+  const estilo = cor ? ` style="color:${cor}"` : "";
+  return `<div class="valor ${classe}"${estilo}>
+    <span class="cifra">R$</span>
+    <span class="inteiro">${oculto ? "•••" : sinal + p.i}</span>
+    ${oculto ? "" : `<span class="centavos">,${p.d}</span>`}
+  </div>`;
+};
+
+const emblemaLoja = (t) => {
+  if (t.tipo === "credito" || t.tipo === "estorno") return `<div class="emblema credito">${icone("entrada", 20)}</div>`;
+  if (t.status === "recusada") return `<div class="emblema recusa">${icone("x", 20)}</div>`;
+  const l = loja(t.loja);
+  return `<div class="emblema">${l ? l.sigla : "??"}</div>`;
+};
+
+function linhaTransacao(t) {
+  const credito = t.tipo === "credito" || t.tipo === "estorno";
+  const recusada = t.status === "recusada";
+  const estornada = t.status === "estornada";
+  const cor = recusada ? "var(--app-suave)" : credito ? "var(--app-sucesso)" : "var(--app-texto)";
+  const sub = recusada ? t.msg : estornada ? `Estornada · ${hora(t.em)}` : hora(t.em);
+  return `<div class="linha primeira" style="cursor:default">
+    ${emblemaLoja(t)}
+    <span class="corpo">
+      <span class="titulo">${esc(t.desc)}</span>
+      <span class="sub">${esc(sub)}</span>
+    </span>
+    <span class="cifra-dir ${recusada || estornada ? "riscado" : ""}" style="color:${cor}">
+      ${credito ? "+" : "−"} ${reais(t.valor)}
+    </span>
+  </div>`;
+}
+
+const avisoHtml = (texto, tom = "", ic = "escudo") =>
+  `<div class="aviso ${tom}">${icone(ic, 17)}<span>${esc(texto)}</span></div>`;
+
+function qrHtml(semente, tam = 176) {
+  const n = 25, cel = tam / n;
+  let h = 0;
+  for (let i = 0; i < semente.length; i++) h = (h * 31 + semente.charCodeAt(i)) >>> 0;
+  const rnd = () => { h = (h * 1664525 + 1013904223) >>> 0; return h / 4294967296; };
+  const marcador = (x, y) =>
+    `<rect x="${x * cel}" y="${y * cel}" width="${7 * cel}" height="${7 * cel}" fill="#14161A"/>
+     <rect x="${(x + 1) * cel}" y="${(y + 1) * cel}" width="${5 * cel}" height="${5 * cel}" fill="#fff"/>
+     <rect x="${(x + 2) * cel}" y="${(y + 2) * cel}" width="${3 * cel}" height="${3 * cel}" fill="#14161A"/>`;
+  const dentroMarcador = (x, y) =>
+    (x < 8 && y < 8) || (x > n - 9 && y < 8) || (x < 8 && y > n - 9);
+  let celulas = "";
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    if (dentroMarcador(x, y)) continue;
+    if (rnd() > 0.52) celulas += `<rect x="${x * cel}" y="${y * cel}" width="${cel}" height="${cel}" fill="#14161A"/>`;
+  }
+  return `<svg width="${tam}" height="${tam}" viewBox="0 0 ${tam} ${tam}" role="img" aria-label="Código QR de demonstração">
+    <rect width="${tam}" height="${tam}" fill="#fff"/>${celulas}
+    ${marcador(0, 0)}${marcador(n - 7, 0)}${marcador(0, n - 7)}
+  </svg>`;
+}
+
+/* =========================================================
+   7. TELAS DO ALUNO
+   ========================================================= */
+function telaCarteira() {
+  const a = aluno();
+  const c = cartaoAtivo(a) || a.cartoes[0];
+  const ultimas = E.transacoes.filter((t) => t.conta === a.conta).slice(0, 4);
+  const gasto = gastoHoje(a), resta = restanteHoje(a);
+  const pct = Math.min(100, (gasto / a.limites.diario) * 100);
+  const hh = new Date().getHours();
+  const saudacao = hh < 12 ? "Bom dia" : hh < 18 ? "Boa tarde" : "Boa noite";
+
+  return `<div class="rolagem entrando">
+    <div style="display:flex;align-items:center;min-height:46px;gap:12px">
+      <div style="flex:1">
+        <p class="legenda">${saudacao}</p>
+        <h3>${esc(a.curto)}</h3>
+      </div>
+      <button class="botao fantasma" style="width:44px;min-height:44px;padding:0;border-radius:999px" data-acao="notificacoes" aria-label="Notificações">${icone("sino", 21)}</button>
+    </div>
+
+    <div class="pilha" style="margin-top:14px">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <p class="legenda">Saldo disponível</p>
+          <button data-acao="ocultar" aria-label="${E.saldoOculto ? "Mostrar saldo" : "Ocultar saldo"}"
+            style="border:0;background:none;cursor:pointer;color:var(--app-suave);padding:4px;display:flex">
+            ${icone(E.saldoOculto ? "olhoFechado" : "olho", 17)}
+          </button>
+        </div>
+        ${valorHtml(a.saldo, { oculto: E.saldoOculto })}
+        <div style="margin-top:10px" class="pilha-sm">
+          <div class="trilha ${resta === 0 ? "esgotada" : ""}"><i style="width:${pct}%"></i></div>
+          <p class="legenda">Limite de hoje: ${reais(resta)} de ${reais(a.limites.diario)} disponíveis</p>
+        </div>
+      </div>
+
+      <div class="duas">
+        <button class="botao compacto" data-acao="ir" data-tela="recarga">${icone("mais", 18, "#fff")} Adicionar saldo</button>
+        <button class="botao compacto secundario" data-acao="ir" data-tela="cartao">${icone("cartao", 18)} Meu cartão</button>
+      </div>
+
+      ${cartaoHtml(a, c)}
+
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <h3 style="flex:1">Onde pagar</h3>
+          <span class="selo">3 lojas</span>
+        </div>
+        <div class="faixa">
+          ${LOJAS.map((l) => {
+            const bloq = a.limites.bloqueadas.includes(l.id);
+            return `<button class="cartao-sup" data-acao="loja" data-loja="${l.id}"
+              style="width:152px;flex:0 0 auto;text-align:left;border:1px solid var(--app-borda);cursor:pointer;font-family:inherit;color:inherit"
+              aria-label="${esc(l.nome)}, ${bloq ? "bloqueada pelo responsável" : "aberta"}">
+              <div class="emblema" style="width:38px;height:38px;font-size:12px">${l.sigla}</div>
+              <div style="margin-top:10px;display:flex;flex-direction:column;gap:3px">
+                <span style="font:600 15px Sora,sans-serif">${esc(l.nome)}</span>
+                <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--app-suave)">
+                  <i style="width:7px;height:7px;border-radius:50%;background:${bloq ? "var(--app-alerta)" : "var(--app-sucesso)"};display:block"></i>
+                  ${bloq ? "Bloqueada" : "Aberta agora"}
+                </span>
+              </div>
+            </button>`;
+          }).join("")}
+        </div>
+      </div>
+
+      <div class="cartao-sup">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <h3 style="flex:1">Últimas transações</h3>
+          <button data-acao="ir" data-tela="extrato" style="border:0;background:none;cursor:pointer;font:600 13px Sora,sans-serif;color:var(--app-marca)">Ver extrato</button>
+        </div>
+        ${ultimas.length ? ultimas.map(linhaTransacao).join("") : `<p class="legenda" style="padding:18px 0;text-align:center">Nada por aqui ainda.</p>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function cartaoHtml(a, c, compacto = true) {
+  return `<div class="cartao-3d ${c.bloqueado ? "bloqueado" : ""}" ${compacto ? 'style="min-height:172px"' : ""}>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1">
+      <div>
+        <p class="rot">FARROUPS-PAY</p>
+        <p class="dado" style="margin-top:2px">Colégio Farroupilha</p>
+      </div>
+      ${icone(c.bloqueado ? "cadeado" : "nfc", 22, "rgba(255,255,255,.9)")}
+    </div>
+    <div class="chip" style="position:relative;z-index:1"></div>
+    <div style="position:relative;z-index:1">
+      <p class="numero">•••• ${c.ultimos4}</p>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px">
+        <div><p class="rot">TITULAR</p><p class="dado">${esc(a.nome.split(" ")[0].toUpperCase())} ${esc(a.nome.split(" ").slice(-1)[0].toUpperCase())}</p></div>
+        <div style="text-align:right"><p class="rot">TURMA</p><p class="dado">${esc(a.turma)}</p></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function telaCartao() {
+  const a = aluno();
+  const tipo = E.fluxo.tipoCartao || "virtual";
+  const c = a.cartoes.find((x) => x.tipo === tipo) || a.cartoes[0];
+  return `<div class="rolagem entrando">
+    <h2>Meu cartão</h2>
+    <p class="legenda">Virtual e físico compartilham a mesma conta e o mesmo saldo.</p>
+    <div class="pilha" style="margin-top:16px">
+      <div style="display:flex;gap:4px;background:var(--app-superficie-alt);border-radius:999px;padding:4px">
+        ${["virtual", "fisico"].map((t) => `
+          <button data-acao="tipo-cartao" data-tipo="${t}" role="tab" aria-selected="${tipo === t}"
+            style="flex:1;min-height:40px;border:0;border-radius:999px;cursor:pointer;font:600 13px Sora,sans-serif;
+            background:${tipo === t ? "var(--app-superficie)" : "transparent"};
+            color:${tipo === t ? "var(--app-texto)" : "var(--app-suave)"}">
+            ${t === "virtual" ? "Virtual" : "Físico"}
+          </button>`).join("")}
+      </div>
+
+      ${a.cartoes.some((x) => x.tipo === tipo) ? cartaoHtml(a, c, false) : `<div class="cartao-sup"><p class="legenda">Este aluno ainda não tem cartão físico emitido.</p></div>`}
+
+      <div style="display:flex;gap:8px;align-items:center">
+        ${c.ativo ? '<span class="selo sucesso">Cartão ativo</span>' : '<span class="selo">Inativo</span>'}
+        ${c.bloqueado ? '<span class="selo alerta">Bloqueado</span>' : ""}
+      </div>
+
+      <div class="duas">
+        <button class="botao compacto ${c.bloqueado ? "" : "secundario"}" data-acao="bloqueio" data-cartao="${c.id}">
+          ${icone(c.bloqueado ? "cadeadoAberto" : "cadeado", 18, c.bloqueado ? "#fff" : "currentColor")}
+          ${c.bloqueado ? "Desbloquear" : "Bloquear"}
+        </button>
+        <button class="botao compacto secundario" data-acao="folha" data-folha="qr">${icone("qr", 18)} Pagar com QR</button>
+      </div>
+
+      <div class="cartao-sup">
+        <div class="linha primeira" style="cursor:default">
+          <div class="emblema marca">${icone("cartao", 19)}</div>
+          <span class="corpo">
+            <span class="titulo">Usar este cartão nas compras</span>
+            <span class="sub">${c.ativo ? "É o cartão ativo da conta" : "Só um cartão fica ativo por vez"}</span>
+          </span>
+          ${c.ativo ? '<span class="selo sucesso">Ativo</span>' :
+            `<button class="botao compacto secundario" style="width:auto" data-acao="ativar" data-cartao="${c.id}">Ativar</button>`}
+        </div>
+      </div>
+
+      ${avisoHtml("O número completo do cartão nunca é exibido no app. Em caso de perda, bloqueie aqui e avise a secretaria.")}
+    </div>
+  </div>`;
+}
+
+function telaExtrato() {
+  const a = aluno();
+  const filtro = E.fluxo.filtroLoja || "todas";
+  const lista = E.transacoes.filter((t) => t.conta === a.conta && (filtro === "todas" || t.loja === filtro));
+  const grupos = {};
+  lista.forEach((t) => {
+    const d = t.hoje ? "Hoje" : data(t.em);
+    (grupos[d] = grupos[d] || []).push(t);
+  });
+  const porLoja = LOJAS.map((l) => ({
+    nome: l.nome,
+    total: E.transacoes.filter((t) => t.conta === a.conta && t.loja === l.id && t.status === "aprovada" && t.tipo === "debito")
+      .reduce((s, t) => s + t.valor, 0)
+  }));
+  const maior = Math.max(1, ...porLoja.map((l) => l.total));
+  const totalMes = porLoja.reduce((s, l) => s + l.total, 0);
+
+  return `<div class="rolagem entrando">
+    <h2>Extrato</h2>
+    <p class="legenda">Tudo que entrou e saiu da carteira.</p>
+
+    <div class="faixa" style="margin:16px 0">
+      <button class="pilula" data-acao="filtro" data-loja="todas" aria-pressed="${filtro === "todas"}">Todas as lojas</button>
+      ${LOJAS.map((l) => `<button class="pilula" data-acao="filtro" data-loja="${l.id}" aria-pressed="${filtro === l.id}">${esc(l.nome)}</button>`).join("")}
+    </div>
+
+    <div class="pilha">
+      <div class="cartao-sup">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+          <div>
+            <p class="legenda">Gasto no mês</p>
+            ${valorHtml(totalMes, { classe: "medio" })}
+          </div>
+          <span class="selo">Por loja</span>
+        </div>
+        <div class="grafico-barras">
+          ${porLoja.map((l) => `
+            <div class="item">
+              <div class="rot"><span>${esc(l.nome)}</span><b>${reais(l.total)}</b></div>
+              <div class="trilha"><i style="width:${Math.round((l.total / maior) * 100)}%"></i></div>
+            </div>`).join("")}
+        </div>
+      </div>
+
+      <div class="cartao-sup">
+        <h3 style="margin-bottom:6px">Movimentações</h3>
+        ${Object.keys(grupos).length === 0
+          ? `<p class="legenda" style="padding:24px 0;text-align:center">Nenhuma transação com esse filtro.</p>`
+          : Object.entries(grupos).map(([dia, itens]) => `
+            <div style="padding-top:10px">
+              <div style="display:flex;align-items:center;gap:8px;padding-bottom:2px">
+                <p class="micro">${esc(dia)}</p>
+                <span style="flex:1;height:1px;background:var(--app-borda)"></span>
+                <p class="micro">${reais(itens.filter((t) => t.tipo === "debito" && t.status === "aprovada").reduce((s, t) => s + t.valor, 0))}</p>
+              </div>
+              ${itens.map(linhaTransacao).join("")}
+            </div>`).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+
+function telaPerfil() {
+  const a = aluno();
+  return `<div class="rolagem entrando">
+    <div style="display:flex;align-items:center;gap:14px;padding:12px 0 18px">
+      <div class="emblema marca" style="width:56px;height:56px;border-radius:999px;font-size:17px">
+        ${esc(a.nome.split(" ")[0][0] + a.nome.split(" ").slice(-1)[0][0])}
+      </div>
+      <div>
+        <h3>${esc(a.nome)}</h3>
+        <p class="legenda">${esc(a.turma)} · matrícula ${esc(a.matricula)}</p>
+      </div>
+    </div>
+
+    <div class="pilha">
+      <div class="cartao-sup">
+        <p class="micro" style="margin-bottom:10px">Aparência</p>
+        <div style="display:flex;gap:4px;background:var(--app-superficie-alt);border-radius:999px;padding:4px">
+          ${[["claro", "Claro"], ["escuro", "Escuro"]].map(([v, r]) => `
+            <button data-acao="tema" data-tema="${v}" aria-pressed="${E.tema === v}"
+              style="flex:1;min-height:40px;border:0;border-radius:999px;cursor:pointer;font:600 13px Sora,sans-serif;
+              background:${E.tema === v ? "var(--app-superficie)" : "transparent"};
+              color:${E.tema === v ? "var(--app-texto)" : "var(--app-suave)"}">${r}</button>`).join("")}
+        </div>
+      </div>
+
+      <div class="cartao-sup">
+        <p class="micro" style="margin-bottom:4px">Segurança</p>
+        <div class="linha primeira" style="cursor:default">
+          <span class="corpo"><span class="titulo">PIN de pagamento</span><span class="sub">Exigido acima de R$ 50,00</span></span>
+          <span class="selo sucesso">Ativo</span>
+        </div>
+        <div class="linha" style="cursor:default">
+          <span class="corpo"><span class="titulo">Biometria</span><span class="sub">Face ID ou digital do aparelho</span></span>
+          <span class="selo">No aparelho</span>
+        </div>
+      </div>
+
+      ${avisoHtml("Dados de estudantes seguem a LGPD: coletamos o mínimo necessário e o responsável autoriza o uso da conta.")}
+
+      <button class="botao perigo" data-acao="sair">${icone("sair", 18, "currentColor")} Sair da conta</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- Recarga ---------- */
+function telaRecarga() {
+  const a = aluno();
+  const valor = E.fluxo.valorRecarga || 0;
+  const metodo = E.fluxo.metodoRecarga || "pix";
+  return `<div class="rolagem entrando">
+    ${voltar("carteira")}
+    <h2>Adicionar saldo</h2>
+    <p class="legenda">O saldo só pode ser usado nas lojas do colégio.</p>
+
+    <div class="pilha" style="margin-top:18px">
+      <div style="text-align:center">
+        <div style="display:flex;justify-content:center">${valorHtml(valor, { cor: valor ? "" : "var(--app-suave)" })}</div>
+        <p class="legenda" style="margin-top:6px">Saldo atual: ${reais(a.saldo)}</p>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        ${[2000, 5000, 10000, 20000].map((v) => `
+          <button class="pilula" data-acao="valor-recarga" data-valor="${v}" aria-pressed="${valor === v}">${reais(v).replace(",00", "")}</button>`).join("")}
+      </div>
+
+      <div class="cartao-sup" style="padding:4px 16px">
+        <button class="linha primeira" data-acao="metodo" data-metodo="pix">
+          <div class="emblema credito">${icone("pix", 19)}</div>
+          <span class="corpo"><span class="titulo">Pix</span><span class="sub">Cai na hora, sem taxa</span></span>
+          <span class="radio" data-on="${metodo === "pix" ? 1 : 0}"></span>
+        </button>
+        <button class="linha" data-acao="metodo" data-metodo="credito">
+          <div class="emblema marca">${icone("cartao", 19)}</div>
+          <span class="corpo"><span class="titulo">Cartão de crédito</span><span class="sub">Gateway certificado PCI-DSS</span></span>
+          <span class="radio" data-on="${metodo === "credito" ? 1 : 0}"></span>
+        </button>
+      </div>
+
+      ${avisoHtml("Recarga automática: quando o saldo cair abaixo de R$ 20,00, o app recarrega R$ 50,00.", "", "atualizar")}
+
+      <button class="botao" data-acao="continuar-recarga" ${valor ? "" : "disabled"}>
+        ${valor ? `Continuar · ${reais(valor)}` : "Escolha um valor"}
+      </button>
+    </div>
+  </div>`;
+}
+
+function telaPix() {
+  const valor = E.fluxo.valorRecarga || 0;
+  const codigo = "00020126580014BR.GOV.BCB.PIX0136farroupspay" + valor + "5204000053039865802BR5921COLEGIO FARROUPILHA6009PORTO ALEGRE";
+  return `<div class="rolagem entrando">
+    ${voltar("recarga")}
+    <h2>Pague com Pix</h2>
+    <p class="legenda">Recarga de ${reais(valor)} · confirmação automática</p>
+
+    <div class="pilha" style="margin-top:18px">
+      <div class="cartao-sup" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px">
+        <div class="qr">${qrHtml(codigo, 172)}</div>
+        <p class="legenda" style="display:flex;align-items:center;gap:8px">
+          ${icone("relogio", 15, "var(--app-suave)")} Aguardando confirmação do banco
+        </p>
+      </div>
+
+      <div class="cartao-sup">
+        <p class="micro">Pix copia e cola</p>
+        <p class="legenda" style="margin:8px 0 12px;word-break:break-all;font-size:11.5px">${esc(codigo.slice(0, 96))}…</p>
+        <button class="botao secundario compacto" data-acao="copiar">${icone("copiar", 17)} Copiar código</button>
+      </div>
+
+      ${avisoHtml("O saldo é creditado assim que o banco confirma. Nenhum dado bancário é guardado no app.")}
+
+      <button class="botao" data-acao="confirmar-pix">Já paguei</button>
+    </div>
+  </div>`;
+}
+
+function telaSucesso() {
+  const a = aluno();
+  return `<div class="rolagem subindo" style="display:flex;flex-direction:column;justify-content:center;min-height:100%">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:20px 0">
+      <div style="width:92px;height:92px;border-radius:50%;background:var(--app-sucesso-suave);display:flex;align-items:center;justify-content:center">
+        ${icone("check", 42, "var(--app-sucesso)", 2.2)}
+      </div>
+      <div>
+        <h3>Saldo adicionado</h3>
+        <p class="legenda" style="margin-top:4px">${E.fluxo.metodoRecarga === "credito" ? "Cartão de crédito" : "Pix"} · ${reais(E.fluxo.valorRecarga || 0)}</p>
+      </div>
+      <div style="padding-top:6px">
+        <p class="legenda">Novo saldo</p>
+        <div style="display:flex;justify-content:center">${valorHtml(a.saldo, { classe: "medio" })}</div>
+      </div>
+    </div>
+    <div class="pilha-sm" style="margin-top:20px">
+      <button class="botao" data-acao="ir" data-tela="carteira">Voltar para a carteira</button>
+      <button class="botao fantasma" data-acao="ir" data-tela="extrato">Ver extrato</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- Pagamento na loja ---------- */
+function telaLoja() {
+  const a = aluno();
+  const l = loja(E.fluxo.loja);
+  const escolhidos = E.fluxo.itens || [];
+  const total = E.fluxo.cobranca ? E.fluxo.cobranca.valor : escolhidos.reduce((s, i) => s + i[1], 0);
+  const bloqueada = a.limites.bloqueadas.includes(l.id);
+  const c = cartaoAtivo(a);
+  const alerta = bloqueada ? `Compras no ${l.nome} foram bloqueadas pelo responsável.`
+    : (c && c.bloqueado) ? "Cartão bloqueado. Desbloqueie no app para pagar." : null;
+
+  return `<div class="rolagem entrando">
+    ${voltar("carteira", `<span class="selo sucesso">Aberta</span>`)}
+    <h2>${esc(l.nome)}</h2>
+    <p class="legenda">${esc(l.desc)}</p>
+
+    <div class="pilha" style="margin-top:16px">
+      ${alerta ? avisoHtml(alerta, "alerta", "alerta") : ""}
+
+      <div class="cartao-sup" style="text-align:center;padding:20px">
+        <p class="legenda">${E.fluxo.cobranca ? "Cobrança lançada no caixa" : "Valor na maquininha"}</p>
+        <div style="display:flex;justify-content:center;margin:6px 0">${valorHtml(total)}</div>
+        <p class="legenda">Saldo: ${reais(a.saldo)} · Limite de hoje: ${reais(restanteHoje(a))}</p>
+        ${total > LIMITE_SEM_PIN ? '<div style="margin-top:10px"><span class="selo marca">Pede PIN ou biometria</span></div>' : ""}
+      </div>
+
+      ${E.fluxo.cobranca ? `
+        <div class="cartao-sup">
+          <p class="micro" style="margin-bottom:10px">Itens do caixa</p>
+          ${E.fluxo.cobranca.itens.map((i) => `
+            <div style="display:flex;padding:5px 0;font-size:14px">
+              <span style="flex:1">${esc(i[0])}</span>
+              <span style="color:var(--app-suave);font-variant-numeric:tabular-nums">${reais(i[1])}</span>
+            </div>`).join("")}
+        </div>` : `
+        <div class="cartao-sup">
+          <p class="micro" style="margin-bottom:10px">O que está sendo cobrado</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            ${l.itens.map(([nome, v], idx) => {
+              const qtd = escolhidos.filter((i) => i[0] === nome).length;
+              return `<button class="item-pdv" data-acao="item" data-idx="${idx}" data-escolhido="${qtd ? 1 : 0}"
+                aria-label="Adicionar ${esc(nome)}, ${reais(v)}">
+                <b>${esc(nome)}${qtd > 1 ? " ×" + qtd : ""}</b><span>${reais(v)}</span>
+              </button>`;
+            }).join("")}
+          </div>
+          ${escolhidos.length ? `<button class="botao fantasma compacto" style="margin-top:12px" data-acao="limpar-itens">Limpar itens</button>` : ""}
+        </div>`}
+
+      ${avisoHtml("Na loja, basta aproximar o cartão da maquininha. Sem cartão em mãos, mostre o QR Code do app.", "", "nfc")}
+
+      <button class="botao" data-acao="pagar" ${total > 0 ? "" : "disabled"}>
+        ${icone("nfc", 18, "#fff")} Aproximar cartão · ${reais(total)}
+      </button>
+    </div>
+  </div>`;
+}
+
+function telaProcessando() {
+  return `<div class="rolagem" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;gap:18px">
+    <div class="nfc">
+      <div class="onda">${icone("nfc", 30, "var(--app-marca)")}</div>
+    </div>
+    <h3>Autorizando pagamento</h3>
+    <p class="legenda" style="text-align:center;max-width:250px">Validando conta, cartão, saldo, limite diário e loja habilitada.</p>
+  </div>`;
+}
+
+function telaRecibo() {
+  const a = aluno();
+  const t = E.fluxo.recibo;
+  const l = loja(t.loja);
+  return `<div class="rolagem subindo">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:24px 0 8px">
+      <div style="width:92px;height:92px;border-radius:50%;background:var(--app-sucesso-suave);display:flex;align-items:center;justify-content:center">
+        ${icone("check", 42, "var(--app-sucesso)", 2.2)}
+      </div>
+      <div>
+        <h3>Pagamento aprovado</h3>
+        <p class="legenda" style="margin-top:4px">${esc(l.nome)} · ${hora(t.em)}</p>
+      </div>
+      <div style="display:flex;justify-content:center">${valorHtml(t.valor, { sinal: "−" })}</div>
+    </div>
+
+    <div class="cartao-sup" style="margin-top:8px">
+      ${(t.itens || []).map((i) => `
+        <div style="display:flex;padding:5px 0;font-size:14px">
+          <span style="flex:1">${esc(i[0])}</span>
+          <span style="color:var(--app-suave);font-variant-numeric:tabular-nums">${reais(i[1])}</span>
+        </div>`).join("")}
+      <div style="height:1px;background:var(--app-borda);margin:10px 0"></div>
+      <div style="display:flex;padding:4px 0;font-size:14px">
+        <span style="flex:1;color:var(--app-suave)">Saldo restante</span>
+        <b style="font-variant-numeric:tabular-nums">${reais(a.saldo)}</b>
+      </div>
+      <div style="display:flex;padding:4px 0;font-size:12.5px;color:var(--app-suave)">
+        <span style="flex:1">Identificador</span><span>${esc(t.id)}</span>
+      </div>
+    </div>
+
+    <p class="legenda" style="text-align:center;margin:14px 0 18px">Recibo enviado ao responsável</p>
+    <div class="pilha-sm">
+      <button class="botao" data-acao="ir" data-tela="carteira">Concluir</button>
+      <button class="botao fantasma" data-acao="ir" data-tela="extrato">Ver no extrato</button>
+    </div>
+  </div>`;
+}
+
+function telaRecusa() {
+  const r = E.fluxo.recusa;
+  return `<div class="rolagem subindo">
+    ${voltar("carteira")}
+    <h2>Pagamento recusado</h2>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:26px 0">
+      <div style="width:92px;height:92px;border-radius:50%;background:var(--app-alerta-suave);display:flex;align-items:center;justify-content:center">
+        ${icone("x", 40, "var(--app-alerta)", 2)}
+      </div>
+      <h3 style="max-width:280px">${esc(r.msg)}</h3>
+      <p class="legenda" style="max-width:280px">Nada foi debitado. A tentativa fica registrada no extrato.</p>
+    </div>
+    <div class="pilha-sm">
+      ${r.motivo === "saldo_insuficiente" ? `<button class="botao" data-acao="ir" data-tela="recarga">${icone("mais", 18, "#fff")} Adicionar saldo</button>` : ""}
+      ${r.motivo === "cartao_bloqueado" ? `<button class="botao" data-acao="ir" data-tela="cartao">${icone("cartao", 18, "#fff")} Ir para o cartão</button>` : ""}
+      <button class="botao ${r.motivo === "saldo_insuficiente" || r.motivo === "cartao_bloqueado" ? "secundario" : ""}" data-acao="loja" data-loja="${esc(r.loja)}">Tentar de novo</button>
+      <button class="botao fantasma" data-acao="ir" data-tela="carteira">Voltar</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- Responsável ---------- */
+function telaResponsavel() {
+  return `<div class="rolagem entrando">
+    <div style="padding:12px 0">
+      <p class="legenda">Responsável</p>
+      <h3>Camila</h3>
+    </div>
+    <div class="pilha">
+      <div>
+        <p class="legenda">Saldo somado dos alunos</p>
+        ${valorHtml(E.alunos.helena.saldo + E.alunos.bento.saldo)}
+      </div>
+      ${Object.entries(E.alunos).map(([id, a]) => {
+        const resta = restanteHoje(a);
+        const pct = Math.min(100, (gastoHoje(a) / a.limites.diario) * 100);
+        return `<div class="cartao-sup">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="emblema marca" style="border-radius:999px">${esc(a.nome[0] + a.nome.split(" ").slice(-1)[0][0])}</div>
+            <div style="flex:1">
+              <p style="font:600 15px Sora,sans-serif">${esc(a.nome)}</p>
+              <p class="legenda">${esc(a.turma)} · matrícula ${esc(a.matricula)}</p>
+            </div>
+            <button class="pilula" data-acao="ajustar" data-aluno="${id}">Ajustar</button>
+          </div>
+          <div style="display:flex;gap:16px;margin:16px 0 12px">
+            <div style="flex:1"><p class="legenda">Saldo</p><p style="font:600 17px Sora,sans-serif;font-variant-numeric:tabular-nums">${reais(a.saldo)}</p></div>
+            <div style="flex:1"><p class="legenda">Gasto hoje</p><p style="font:600 17px Sora,sans-serif;font-variant-numeric:tabular-nums">${reais(gastoHoje(a))}</p></div>
+          </div>
+          <div class="trilha ${resta === 0 ? "esgotada" : ""}"><i style="width:${pct}%"></i></div>
+          <p class="legenda" style="margin-top:6px">Restam ${reais(resta)} do limite diário de ${reais(a.limites.diario)}</p>
+          ${a.limites.bloqueadas.length ? `<p class="legenda" style="color:var(--app-alerta);margin-top:4px">Bloqueada: ${a.limites.bloqueadas.map((b) => loja(b).nome).join(", ")}</p>` : ""}
+        </div>`;
+      }).join("")}
+    </div>
+  </div>`;
+}
+
+function telaAjustes() {
+  const id = E.fluxo.alunoAjuste || "helena";
+  const a = E.alunos[id];
+  return `<div class="rolagem entrando">
+    ${voltar("resp-alunos")}
+    <h2>${esc(a.curto)}</h2>
+    <p class="legenda">${esc(a.turma)} · saldo ${reais(a.saldo)}</p>
+
+    <div class="pilha" style="margin-top:16px">
+      <div class="cartao-sup">
+        <p class="micro" style="margin-bottom:12px">Limite diário</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${[2000, 3000, 5000, 8000].map((v) => `
+            <button class="pilula" data-acao="limite" data-aluno="${id}" data-valor="${v}" aria-pressed="${a.limites.diario === v}">${reais(v).replace(",00", "")}</button>`).join("")}
+        </div>
+        <p class="legenda" style="margin-top:12px">Gasto hoje: ${reais(gastoHoje(a))} · o limite zera à meia-noite, no fuso de Brasília.</p>
+      </div>
+
+      <div class="cartao-sup">
+        <p class="micro" style="margin-bottom:4px">Lojas permitidas</p>
+        ${LOJAS.map((l, i) => {
+          const bloq = a.limites.bloqueadas.includes(l.id);
+          return `<div class="linha ${i === 0 ? "primeira" : ""}" style="cursor:default">
+            <div class="emblema">${l.sigla}</div>
+            <span class="corpo">
+              <span class="titulo">${esc(l.nome)}</span>
+              <span class="sub">${bloq ? "Bloqueada para este aluno" : esc(l.desc)}</span>
+            </span>
+            <button class="interruptor" role="switch" aria-checked="${!bloq}" aria-label="Permitir compras no ${esc(l.nome)}"
+              data-acao="bloquear-loja" data-aluno="${id}" data-loja="${l.id}"><i></i></button>
+          </div>`;
+        }).join("")}
+      </div>
+
+      ${avisoHtml("Limites e bloqueios valem imediatamente, inclusive para uma compra já na maquininha.")}
+    </div>
+  </div>`;
+}
+
+/* ---------- Lojista ---------- */
+function telaCobrar() {
+  const escolhidos = E.fluxo.itensPdv || [];
+  const total = escolhidos.reduce((s, i) => s + i[1], 0);
+  const l = loja("bar-do-ze");
+
+  if (E.cobranca && E.cobranca.status === "aberta") {
+    return `<div class="rolagem subindo" style="display:flex;flex-direction:column;justify-content:center;min-height:100%;text-align:center;gap:16px">
+      <p class="legenda">Aguardando o aluno · ${esc(l.nome)}</p>
+      <div style="display:flex;justify-content:center">${valorHtml(E.cobranca.valor)}</div>
+      <p class="legenda" style="max-width:280px;margin:0 auto">Peça para o aluno aproximar o cartão da maquininha ou apresentar o QR Code do app.</p>
+      <div class="cartao-sup" style="text-align:left">
+        ${E.cobranca.itens.map((i) => `
+          <div style="display:flex;padding:5px 0;font-size:14px">
+            <span style="flex:1">${esc(i[0])}</span>
+            <span style="color:var(--app-suave);font-variant-numeric:tabular-nums">${reais(i[1])}</span>
+          </div>`).join("")}
+        <p class="legenda" style="margin-top:8px">Aberta às ${hora(E.cobranca.em)} · código ${esc(E.cobranca.id)}</p>
+      </div>
+      ${avisoHtml("Troque para o perfil da Aluna no painel ao lado e abra o Bar do Zé: a cobrança aparece lá.", "sucesso", "check")}
+      <button class="botao perigo" data-acao="cancelar-cobranca">Cancelar cobrança</button>
+    </div>`;
+  }
+
+  return `<div class="rolagem entrando">
+    <div style="padding:10px 0 16px">
+      <p class="legenda">${esc(l.nome)}</p>
+      <h3>José Rocha · caixa</h3>
+    </div>
+    <div class="pilha">
+      <div style="display:flex;justify-content:center;padding:6px 0">
+        ${valorHtml(total, { cor: total ? "" : "var(--app-suave)" })}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${l.itens.map(([nome, v], idx) => `
+          <button class="item-pdv" data-acao="item-pdv" data-idx="${idx}" aria-label="Adicionar ${esc(nome)} por ${reais(v)}">
+            <b>${esc(nome)}</b><span>${reais(v)}</span>
+          </button>`).join("")}
+      </div>
+      ${escolhidos.length ? `<button class="botao fantasma compacto" data-acao="limpar-pdv">Limpar ${escolhidos.length} ${escolhidos.length === 1 ? "item" : "itens"}</button>` : ""}
+      ${avisoHtml("Cobranças ficam registradas com o operador que as lançou. Estornos exigem senha.")}
+      <button class="botao" data-acao="abrir-cobranca" ${total ? "" : "disabled"}>Cobrar ${total ? reais(total) : ""}</button>
+    </div>
+  </div>`;
+}
+
+function telaFila() {
+  const doDia = E.transacoes.filter((t) => t.loja === "bar-do-ze" && t.hoje);
+  const aprovadas = doDia.filter((t) => t.tipo === "debito" && t.status === "aprovada");
+  const total = aprovadas.reduce((s, t) => s + t.valor, 0);
+  return `<div class="rolagem entrando">
+    <h2>Fila do dia</h2>
+    <p class="legenda">Bar do Zé · ${aprovadas.length} ${aprovadas.length === 1 ? "venda aprovada" : "vendas aprovadas"}</p>
+    <div class="pilha" style="margin-top:16px">
+      <div class="cartao-sup">
+        <p class="legenda">Total acumulado hoje</p>
+        ${valorHtml(total, { classe: "medio", cor: "var(--app-sucesso)" })}
+      </div>
+      <div class="cartao-sup">
+        ${doDia.length === 0
+          ? `<p class="legenda" style="padding:24px 0;text-align:center">Nenhuma venda hoje ainda.</p>`
+          : doDia.map((t, i) => `
+            <div class="linha ${i === 0 ? "primeira" : ""}" style="cursor:default">
+              ${emblemaLoja(t)}
+              <span class="corpo">
+                <span class="titulo">${reais(t.valor)}</span>
+                <span class="sub">${hora(t.em)} · ${esc((t.itens || []).map((x) => x[0]).join(", ") || "Sem itens detalhados")}</span>
+              </span>
+              ${t.tipo === "debito" && t.status === "aprovada"
+                ? `<button class="botao secundario compacto" style="width:auto" data-acao="folha" data-folha="estorno" data-trx="${t.id}">Estornar</button>`
+                : `<span class="selo ${t.status === "recusada" ? "alerta" : ""}">${t.status === "recusada" ? "Recusada" : t.tipo === "estorno" ? "Estorno" : "Estornada"}</span>`}
+            </div>`).join("")}
+      </div>
+      <p class="legenda">Estornos valem por 24 horas e devolvem o valor ao saldo do aluno no app — nunca ao meio de pagamento original.</p>
+    </div>
+  </div>`;
+}
+
+/* ---------- Colégio ---------- */
+function telaAdmin() {
+  const debitos = E.transacoes.filter((t) => t.tipo === "debito" && t.status === "aprovada");
+  const volume = debitos.reduce((s, t) => s + t.valor, 0);
+  const ticket = debitos.length ? Math.round(volume / debitos.length) : 0;
+  const porLoja = LOJAS.map((l) => {
+    const d = debitos.filter((t) => t.loja === l.id);
+    return { nome: l.nome, id: l.id, total: d.reduce((s, t) => s + t.valor, 0), qtd: d.length };
+  });
+  const maior = Math.max(1, ...porLoja.map((l) => l.total));
+  const repasse = (id) => E.lancamentos.flatMap((l) => l.linhas)
+    .filter((l) => l.conta === CONTAS.loja(id))
+    .reduce((s, l) => s + (l.t === "C" ? l.v : -l.v), 0);
+
+  return `<div class="rolagem entrando">
+    <div style="padding:10px 0 16px">
+      <p class="legenda">Painel administrativo</p>
+      <h3>Secretaria Farroupilha</h3>
+    </div>
+    <div class="pilha">
+      <div class="cartao-sup">
+        <p class="legenda">Saldo em custódia</p>
+        ${valorHtml(custodia(), { classe: "medio" })}
+        <p class="legenda" style="margin-top:6px">Total que o colégio guarda em nome dos 2 alunos ativos.</p>
+      </div>
+
+      <div class="duas">
+        <div class="cartao-sup"><p class="legenda">Volume</p><p style="font:600 19px Sora,sans-serif;font-variant-numeric:tabular-nums;margin-top:4px">${reais(volume)}</p></div>
+        <div class="cartao-sup"><p class="legenda">Ticket médio</p><p style="font:600 19px Sora,sans-serif;font-variant-numeric:tabular-nums;margin-top:4px">${reais(ticket)}</p></div>
+      </div>
+
+      <div class="cartao-sup">
+        <h3 style="margin-bottom:12px">Volume por loja</h3>
+        <div class="grafico-barras">
+          ${porLoja.map((l) => `
+            <div class="item">
+              <div class="rot"><span>${esc(l.nome)}</span><b>${reais(l.total)}</b></div>
+              <div class="trilha"><i style="width:${Math.round((l.total / maior) * 100)}%"></i></div>
+              <span style="font-size:11.5px;color:var(--app-suave)">${l.qtd} ${l.qtd === 1 ? "transação" : "transações"}</span>
+            </div>`).join("")}
+        </div>
+      </div>
+
+      <div class="cartao-sup">
+        <h3 style="margin-bottom:8px">Conciliação e repasse</h3>
+        ${LOJAS.map((l, i) => `
+          <div class="linha ${i === 0 ? "primeira" : ""}" style="cursor:default">
+            <div class="emblema">${l.sigla}</div>
+            <span class="corpo"><span class="titulo">${esc(l.nome)}</span><span class="sub">A repassar</span></span>
+            <span class="cifra-dir">${reais(repasse(l.id))}</span>
+          </div>`).join("")}
+        <p class="legenda" style="margin-top:10px">Calculado a partir do ledger de dupla entrada. O repasse gera um lançamento próprio e não altera o histórico.</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+function telaLogin() {
+  const contas = [
+    ["aluno", "Aluna", "Helena · 8º ano A"],
+    ["responsavel", "Responsável", "Camila · 2 alunos"],
+    ["lojista", "Lojista", "Bar do Zé"],
+    ["admin", "Colégio", "Painel administrativo"]
+  ];
+  return `<div class="rolagem entrando">
+    <div style="padding:20px 0 24px">
+      <div class="marca-app">F</div>
+      <h2 style="margin-top:16px;font-size:32px">Farroups-pay</h2>
+      <p class="legenda" style="margin-top:6px">A carteira do Colégio Farroupilha. Saldo, cartão e extrato em um lugar só.</p>
+    </div>
+    <div class="pilha-sm">
+      <p class="micro">Entrar como</p>
+      ${contas.map(([p, nome, desc]) => `
+        <button class="cartao-sup" data-acao="perfil" data-perfil="${p}"
+          style="display:flex;align-items:center;gap:12px;text-align:left;border:1px solid var(--app-borda);cursor:pointer;font-family:inherit;color:inherit;width:100%">
+          <span class="corpo" style="flex:1;display:flex;flex-direction:column;gap:2px">
+            <span style="font:600 15px Sora,sans-serif">${nome}</span>
+            <span class="legenda">${desc}</span>
+          </span>
+          <span class="selo marca">Entrar</span>
+          ${icone("seta", 16, "var(--app-suave)")}
+        </button>`).join("")}
+      ${avisoHtml("Dados de estudantes são tratados conforme a LGPD, com consentimento do responsável.")}
+    </div>
+  </div>`;
+}
+
+const voltar = (destino, extra = "") => `
+  <div style="display:flex;align-items:center;min-height:44px;margin:0 -8px 4px">
+    <button data-acao="ir" data-tela="${destino}" aria-label="Voltar"
+      style="width:44px;height:44px;border:0;background:none;cursor:pointer;color:var(--app-texto);display:flex;align-items:center;justify-content:center">
+      ${icone("volta", 22)}
+    </button>
+    <span style="flex:1"></span>${extra}
+  </div>`;
+
+/* =========================================================
+   8. FOLHAS (PIN, QR, estorno)
+   ========================================================= */
+function folhaHtml() {
+  if (!E.folha) return "";
+  const f = E.folha;
+  if (f.tipo === "pin") {
+    const pin = f.pin || "";
+    return `<div class="folha-fundo" data-acao="fechar-folha">
+      <div class="folha" role="dialog" aria-label="Confirme o pagamento" data-stop="1">
+        <div class="puxador"></div>
+        <h3>Confirme o pagamento</h3>
+        <p class="legenda" style="margin-top:4px">${reais(f.valor)} · compras acima de R$ 50,00 pedem autorização</p>
+        <div class="pontos-pin ${f.erro ? "erro" : ""}" style="margin:18px 0">
+          ${[0, 1, 2, 3].map((i) => `<i class="${i < pin.length ? "cheio" : ""}"></i>`).join("")}
+        </div>
+        ${f.erro ? `<p class="legenda" style="text-align:center;color:var(--app-alerta)">${esc(f.erro)}</p>` : ""}
+        <div class="teclado">
+          ${["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "←"].map((t) =>
+            t === "" ? "<span></span>" : `<button data-acao="pin" data-tecla="${t}" aria-label="${t === "←" ? "Apagar" : t}">${t}</button>`).join("")}
+        </div>
+        <p class="legenda" style="text-align:center;margin-top:8px">PIN da demonstração: 1234</p>
+      </div>
+    </div>`;
+  }
+  if (f.tipo === "qr") {
+    const a = aluno();
+    return `<div class="folha-fundo" data-acao="fechar-folha">
+      <div class="folha" role="dialog" aria-label="Pagar com QR Code" data-stop="1">
+        <div class="puxador"></div>
+        <h3>Pagar com QR Code</h3>
+        <p class="legenda" style="margin-top:4px">Mostre para a maquininha da loja. O código expira em 60 segundos.</p>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px 0">
+          <div class="qr">${qrHtml("FPAY|" + a.conta + "|" + (f.semente || "000000"), 168)}</div>
+          <p class="legenda">Expira em <b id="contagem">${f.restante != null ? f.restante : 60}</b>s</p>
+        </div>
+        <button class="botao secundario" data-acao="novo-qr">${icone("atualizar", 17)} Gerar novo código</button>
+      </div>
+    </div>`;
+  }
+  if (f.tipo === "estorno") {
+    return `<div class="folha-fundo" data-acao="fechar-folha">
+      <div class="folha" role="dialog" aria-label="Estornar venda" data-stop="1">
+        <div class="puxador"></div>
+        <h3>Estornar venda</h3>
+        <p class="legenda" style="margin-top:4px">${reais(f.valor)} · devolve o valor ao saldo do aluno</p>
+        <div class="pilha-sm" style="margin-top:16px">
+          ${avisoHtml("Justificativa registrada: pedido trocado no balcão. A senha do operador é exigida no app real.", "", "escudo")}
+          <button class="botao perigo" data-acao="confirmar-estorno" data-trx="${esc(f.trx)}">Confirmar estorno</button>
+          <button class="botao fantasma" data-acao="fechar-folha">Agora não</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return "";
+}
+
+/* =========================================================
+   9. NAVEGAÇÃO E RENDER
+   ========================================================= */
+const ABAS = {
+  aluno: [["carteira", "Carteira", "carteira"], ["cartao", "Cartão", "cartao"], ["extrato", "Extrato", "recibo"], ["perfil", "Perfil", "perfil"]],
+  responsavel: [["resp-alunos", "Alunos", "usuarios"], ["resp-ajustes", "Ajustes", "perfil"]],
+  lojista: [["loj-cobrar", "Cobrar", "qr"], ["loj-fila", "Fila do dia", "recibo"]],
+  admin: []
+};
+
+const TELAS = {
+  login: telaLogin,
+  carteira: telaCarteira,
+  cartao: telaCartao,
+  extrato: telaExtrato,
+  perfil: telaPerfil,
+  recarga: telaRecarga,
+  pix: telaPix,
+  sucesso: telaSucesso,
+  loja: telaLoja,
+  processando: telaProcessando,
+  recibo: telaRecibo,
+  recusa: telaRecusa,
+  "resp-alunos": telaResponsavel,
+  "resp-ajustes": telaAjustes,
+  "loj-cobrar": telaCobrar,
+  "loj-fila": telaFila,
+  admin: telaAdmin
+};
+
+const $ = (s) => document.querySelector(s);
+
+function render() {
+  const vidro = $("#vidro");
+  vidro.dataset.tema = E.tema;
+
+  const fn = TELAS[E.tela] || telaCarteira;
+  $("#tela").innerHTML =
+    (E.aviso ? `<div class="aviso-topo">${icone(E.aviso.tom === "erro" ? "alerta" : "check", 18, E.aviso.tom === "erro" ? "var(--app-alerta)" : "var(--app-sucesso)")}<span>${esc(E.aviso.texto)}</span></div>` : "") +
+    fn() + folhaHtml();
+
+  const abas = ABAS[E.perfil] || [];
+  const mostraAbas = abas.length > 0 && !["login", "processando", "recibo", "recusa", "sucesso", "pix", "loja", "recarga"].includes(E.tela);
+  $("#abas").style.display = mostraAbas ? "flex" : "none";
+  $("#abas").innerHTML = mostraAbas ? abas.map(([tela, rot, ic]) => `
+    <button role="tab" aria-selected="${E.tela === tela}" data-acao="ir" data-tela="${tela}">
+      ${icone(ic, 22, E.tela === tela ? "var(--app-marca)" : "var(--app-suave)")}
+      <span>${rot}</span>
+    </button>`).join("") : "";
+
+  renderConsole();
+}
+
+function renderConsole() {
+  const perfis = [
+    ["aluno", "Aluna", "Helena · 8º ano A"],
+    ["responsavel", "Responsável", "Camila · 2 alunos"],
+    ["lojista", "Lojista", "Bar do Zé"],
+    ["admin", "Colégio", "Painel"]
+  ];
+  $("#perfis").innerHTML = perfis.map(([p, nome, desc]) => `
+    <button class="perfil" data-acao="perfil" data-perfil="${p}" aria-pressed="${E.perfil === p}">
+      <b>${nome}</b><span>${desc}</span>
+    </button>`).join("");
+
+  const passos = [
+    ["recarga", "Recarregar por Pix", "Carteira → Adicionar saldo → R$ 50 → Já paguei"],
+    ["compra", "Pagar numa loja", "Toque em Bar do Zé, escolha um item, aproxime o cartão"],
+    ["limite", "Estourar o limite diário", "Repita compras até passar de R$ 50 no dia"],
+    ["bloqueio", "Bloquear o cartão e tentar pagar", "Cartão → Bloquear, depois tente uma compra"],
+    ["estorno", "Estornar uma venda", "Perfil Lojista → Fila do dia → Estornar"]
+  ];
+  const feitos = passos.filter(([k]) => E.roteiro[k]).length;
+  $("#roteiro-contagem").textContent = `${feitos} de ${passos.length}`;
+  $("#roteiro").innerHTML = passos.map(([k, rot, dica]) => `
+    <li data-feito="${E.roteiro[k] ? 1 : 0}">
+      <span class="caixa">${E.roteiro[k] ? icone("check", 12, "#fff", 2.6) : ""}</span>
+      <span><span class="rotulo">${rot}</span><span class="dica">${dica}</span></span>
+    </li>`).join("");
+
+  $("#custodia").textContent = reais(custodia());
+  $("#ledger").innerHTML = E.lancamentos.length === 0
+    ? `<p class="vazio">Nenhum lançamento ainda.</p>`
+    : E.lancamentos.slice(0, 14).map((l) => `
+      <div class="lanc">
+        <div class="cab"><span>${esc(l.descricao)}</span><time>${hora(l.em)}</time></div>
+        ${l.linhas.map((li) => `
+          <div class="l">
+            <b class="${li.t === "D" ? "d" : "c"}">${li.t}</b>
+            <span class="conta">${esc(li.conta)}</span>
+            <span class="v">${reais(li.v)}</span>
+          </div>`).join("")}
+      </div>`).join("");
+}
+
+function avisar(texto, tom = "ok") {
+  E.aviso = { texto, tom };
+  render();
+  clearTimeout(avisar._t);
+  avisar._t = setTimeout(() => { E.aviso = null; render(); }, 3000);
+}
+
+function ir(tela) {
+  E.tela = tela;
+  E.folha = null;
+  render();
+}
+
+/* =========================================================
+   10. AÇÕES
+   ========================================================= */
+function trocarPerfil(p) {
+  E.perfil = p;
+  E.fluxo = {};
+  E.tela = p === "aluno" ? "carteira" : p === "responsavel" ? "resp-alunos" : p === "lojista" ? "loj-cobrar" : "admin";
+  render();
+}
+
+function registrarTransacao(t) {
+  E.transacoes.unshift(t);
+}
+
+function concluirPagamento(auth) {
+  const a = aluno();
+  const l = loja(E.fluxo.loja);
+  const itens = E.fluxo.cobranca ? E.fluxo.cobranca.itens : (E.fluxo.itens || []);
+  const valor = E.fluxo.cobranca ? E.fluxo.cobranca.valor : itens.reduce((s, i) => s + i[1], 0);
+  const c = cartaoAtivo(a);
+  const veredito = avaliarPagamento({ a, cartao: c, lj: l, valor });
+
+  if (!veredito.ok) {
+    registrarTransacao({
+      id: "trx_" + Math.random().toString(36).slice(2, 6).toUpperCase(),
+      conta: a.conta, tipo: "debito", status: "recusada", valor, loja: l.id,
+      desc: l.nome, itens, msg: veredito.msg, em: new Date().toISOString(), hoje: true
+    });
+    if (veredito.motivo === "limite_diario") E.roteiro.limite = true;
+    if (veredito.motivo === "cartao_bloqueado") E.roteiro.bloqueio = true;
+    E.fluxo.recusa = { msg: veredito.msg, motivo: veredito.motivo, loja: l.id };
+    ir("recusa");
+    return;
+  }
+
+  if (veredito.exigeAutenticacao && !auth) {
+    E.tela = "loja";
+    E.folha = { tipo: "pin", valor, pin: "" };
+    render();
+    return;
+  }
+
+  a.saldo -= valor;
+  const t = {
+    id: "trx_" + Math.random().toString(36).slice(2, 6).toUpperCase(),
+    conta: a.conta, tipo: "debito", status: "aprovada", valor, loja: l.id,
+    desc: l.nome, itens, em: new Date().toISOString(), hoje: true
+  };
+  registrarTransacao(t);
+  lancar(l.nome, [
+    { conta: CONTAS.aluno(a.conta), t: "D", v: valor },
+    { conta: CONTAS.loja(l.id), t: "C", v: valor }
+  ]);
+  if (E.fluxo.cobranca && E.cobranca) E.cobranca.status = "paga";
+  E.roteiro.compra = true;
+  E.fluxo.recibo = t;
+  E.fluxo.itens = [];
+  E.fluxo.cobranca = null;
+  ir("recibo");
+}
+
+const ACOES = {
+  ir: (el) => ir(el.dataset.tela),
+
+  perfil: (el) => trocarPerfil(el.dataset.perfil),
+
+  ocultar: () => { E.saldoOculto = !E.saldoOculto; render(); },
+
+  tema: (el) => { E.tema = el.dataset.tema; render(); },
+
+  notificacoes: () => avisar("3 avisos enviados ao responsável hoje."),
+
+  sair: () => { E.tela = "login"; E.folha = null; render(); },
+
+  "tipo-cartao": (el) => { E.fluxo.tipoCartao = el.dataset.tipo; render(); },
+
+  bloqueio: (el) => {
+    const a = aluno();
+    const c = a.cartoes.find((x) => x.id === el.dataset.cartao);
+    c.bloqueado = !c.bloqueado;
+    avisar(c.bloqueado ? "Cartão bloqueado. Nenhuma compra será aprovada." : "Cartão desbloqueado. Já dá para pagar.", c.bloqueado ? "erro" : "ok");
+  },
+
+  ativar: (el) => {
+    const a = aluno();
+    a.cartoes.forEach((c) => { c.ativo = c.id === el.dataset.cartao; });
+    avisar("Cartão ativo atualizado.");
+  },
+
+  filtro: (el) => { E.fluxo.filtroLoja = el.dataset.loja; render(); },
+
+  loja: (el) => {
+    E.fluxo.loja = el.dataset.loja;
+    E.fluxo.itens = [];
+    E.fluxo.cobranca = (E.cobranca && E.cobranca.status === "aberta" && E.cobranca.loja === el.dataset.loja) ? E.cobranca : null;
+    ir("loja");
+  },
+
+  item: (el) => {
+    const l = loja(E.fluxo.loja);
+    E.fluxo.itens = (E.fluxo.itens || []).concat([l.itens[+el.dataset.idx]]);
+    render();
+  },
+
+  "limpar-itens": () => { E.fluxo.itens = []; render(); },
+
+  pagar: () => {
+    ir("processando");
+    setTimeout(() => concluirPagamento(false), 1100);
+  },
+
+  pin: (el) => {
+    const f = E.folha;
+    if (!f) return;
+    const t = el.dataset.tecla;
+    f.erro = null;
+    f.pin = t === "←" ? (f.pin || "").slice(0, -1) : ((f.pin || "") + t).slice(0, 4);
+    render();
+    if ((f.pin || "").length === 4) {
+      setTimeout(() => {
+        if (f.pin === PIN_DEMO) {
+          E.folha = null;
+          ir("processando");
+          setTimeout(() => concluirPagamento(true), 900);
+        } else {
+          f.pin = "";
+          f.erro = "PIN incorreto. Tente novamente.";
+          render();
+        }
+      }, 180);
+    }
+  },
+
+  folha: (el) => {
+    const tipo = el.dataset.folha;
+    if (tipo === "qr") {
+      E.folha = { tipo: "qr", semente: Math.random().toString().slice(2, 8), restante: 60 };
+      render();
+      iniciarContagem();
+    } else if (tipo === "estorno") {
+      const t = E.transacoes.find((x) => x.id === el.dataset.trx);
+      E.folha = { tipo: "estorno", trx: t.id, valor: t.valor };
+      render();
+    }
+  },
+
+  "fechar-folha": () => { E.folha = null; render(); },
+
+  "novo-qr": () => {
+    E.folha = { tipo: "qr", semente: Math.random().toString().slice(2, 8), restante: 60 };
+    render();
+    iniciarContagem();
+  },
+
+  "valor-recarga": (el) => { E.fluxo.valorRecarga = +el.dataset.valor; render(); },
+
+  metodo: (el) => { E.fluxo.metodoRecarga = el.dataset.metodo; render(); },
+
+  "continuar-recarga": () => {
+    if (E.fluxo.metodoRecarga === "credito") {
+      ir("processando");
+      setTimeout(() => ACOES["confirmar-pix"](), 1200);
+    } else {
+      ir("pix");
+    }
+  },
+
+  copiar: () => {
+    avisar("Código Pix copiado.");
+  },
+
+  "confirmar-pix": () => {
+    const a = aluno();
+    const valor = E.fluxo.valorRecarga || 0;
+    a.saldo += valor;
+    const desc = E.fluxo.metodoRecarga === "credito" ? "Recarga no cartão de crédito" : "Recarga via Pix";
+    registrarTransacao({
+      id: "trx_" + Math.random().toString(36).slice(2, 6).toUpperCase(),
+      conta: a.conta, tipo: "credito", status: "aprovada", valor,
+      desc, metodo: E.fluxo.metodoRecarga || "pix", em: new Date().toISOString(), hoje: true
+    });
+    lancar(desc, [
+      { conta: CONTAS.caixa, t: "D", v: valor },
+      { conta: CONTAS.aluno(a.conta), t: "C", v: valor }
+    ]);
+    E.roteiro.recarga = true;
+    ir("sucesso");
+  },
+
+  ajustar: (el) => { E.fluxo.alunoAjuste = el.dataset.aluno; ir("resp-ajustes"); },
+
+  limite: (el) => {
+    const a = E.alunos[el.dataset.aluno];
+    a.limites.diario = +el.dataset.valor;
+    avisar(`Limite diário de ${a.curto} agora é ${reais(a.limites.diario)}.`);
+  },
+
+  "bloquear-loja": (el) => {
+    const a = E.alunos[el.dataset.aluno];
+    const id = el.dataset.loja;
+    const i = a.limites.bloqueadas.indexOf(id);
+    if (i >= 0) a.limites.bloqueadas.splice(i, 1);
+    else a.limites.bloqueadas.push(id);
+    avisar(i >= 0 ? `${loja(id).nome} liberada.` : `${loja(id).nome} bloqueada para ${a.curto}.`, i >= 0 ? "ok" : "erro");
+  },
+
+  "item-pdv": (el) => {
+    const l = loja("bar-do-ze");
+    E.fluxo.itensPdv = (E.fluxo.itensPdv || []).concat([l.itens[+el.dataset.idx]]);
+    render();
+  },
+
+  "limpar-pdv": () => { E.fluxo.itensPdv = []; render(); },
+
+  "abrir-cobranca": () => {
+    const itens = E.fluxo.itensPdv || [];
+    E.cobranca = {
+      id: "cob_" + Math.random().toString(36).slice(2, 6).toUpperCase(),
+      loja: "bar-do-ze", valor: itens.reduce((s, i) => s + i[1], 0),
+      itens, em: new Date().toISOString(), status: "aberta"
+    };
+    E.fluxo.itensPdv = [];
+    avisar("Cobrança lançada. Peça para o aluno aproximar o cartão.");
+  },
+
+  "cancelar-cobranca": () => { E.cobranca = null; avisar("Cobrança cancelada.", "erro"); },
+
+  "confirmar-estorno": (el) => {
+    const t = E.transacoes.find((x) => x.id === el.dataset.trx);
+    const dono = Object.values(E.alunos).find((a) => a.conta === t.conta);
+    dono.saldo += t.valor;
+    t.status = "estornada";
+    registrarTransacao({
+      id: "trx_" + Math.random().toString(36).slice(2, 6).toUpperCase(),
+      conta: t.conta, tipo: "estorno", status: "aprovada", valor: t.valor, loja: t.loja,
+      desc: "Estorno · " + t.desc, em: new Date().toISOString(), hoje: true
+    });
+    lancar("Estorno — pedido trocado no balcão", [
+      { conta: CONTAS.loja(t.loja), t: "D", v: t.valor },
+      { conta: CONTAS.aluno(t.conta), t: "C", v: t.valor }
+    ]);
+    E.roteiro.estorno = true;
+    E.folha = null;
+    avisar("Estorno concluído. O valor voltou ao saldo do aluno.");
+  }
+};
+
+let contagemTimer = null;
+function iniciarContagem() {
+  clearInterval(contagemTimer);
+  contagemTimer = setInterval(() => {
+    if (!E.folha || E.folha.tipo !== "qr") { clearInterval(contagemTimer); return; }
+    E.folha.restante = Math.max(0, (E.folha.restante || 60) - 1);
+    const alvo = document.getElementById("contagem");
+    if (alvo) alvo.textContent = E.folha.restante;
+    if (E.folha.restante === 0) clearInterval(contagemTimer);
+  }, 1000);
+}
+
+/* =========================================================
+   11. EVENTOS
+   ========================================================= */
+document.addEventListener("click", (ev) => {
+  const palco = ev.target.closest("[data-palco]");
+  if (palco) {
+    if (palco.dataset.palco === "reiniciar") {
+      E = estadoInicial();
+      semearLedger();
+      render();
+      return;
+    }
+    if (palco.dataset.palco === "tema") {
+      E.tema = E.tema === "claro" ? "escuro" : "claro";
+      render();
+      return;
+    }
+  }
+
+  const el = ev.target.closest("[data-acao]");
+  if (!el) return;
+  if (el.dataset.acao === "fechar-folha") {
+    const noFundo = ev.target.classList.contains("folha-fundo");
+    const noBotao = ev.target.closest("button[data-acao='fechar-folha']");
+    if (!noFundo && !noBotao) return;
+  }
+  const fn = ACOES[el.dataset.acao];
+  if (fn) { ev.preventDefault(); fn(el); }
+});
+
+function relogio() {
+  const el = document.getElementById("relogio");
+  if (el) el.textContent = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
+}
+
+semearLedger();
+render();
+relogio();
+setInterval(relogio, 20000);
+</script>
+</body>
+</html>
