@@ -1,0 +1,2 @@
+# Configuracao local com senhas/segredos - nunca versionar
+firmware/**/config.h
