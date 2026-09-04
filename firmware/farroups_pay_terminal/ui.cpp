@@ -30,7 +30,7 @@ void uiIniciar() {
   uiLimparLeds();
 
 #if USAR_LCD
-  Wire.begin(PINO_SDA, PINO_SCL);
+  Wire.begin();
   lcd.init();
   lcd.backlight();
   lcd.clear();

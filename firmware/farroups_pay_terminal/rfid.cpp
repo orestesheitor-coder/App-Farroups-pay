@@ -21,9 +21,18 @@ void rfidIniciar() {
     leitores[i].PCD_Init(PINOS_SS_RFID[i], PINO_RST_RFID);
     delay(50);
     byte versao = leitores[i].PCD_ReadRegister(MFRC522::VersionReg);
-    Serial.printf("[RFID] Leitor %d (SS=%d) versao 0x%02X %s\n",
-                  i, PINOS_SS_RFID[i], versao,
-                  (versao == 0x00 || versao == 0xFF) ? "ERRO NA FIACAO" : "OK");
+    Serial.print("[RFID] Leitor ");
+    Serial.print(i);
+    Serial.print(" (SS=");
+    Serial.print(PINOS_SS_RFID[i]);
+    Serial.print(") versao 0x");
+    Serial.print(versao, HEX);
+    Serial.print(" ");
+    if (versao == 0x00 || versao == 0xFF) {
+      Serial.println("ERRO NA FIACAO!");
+    } else {
+      Serial.println("OK");
+    }
   }
 }
 
