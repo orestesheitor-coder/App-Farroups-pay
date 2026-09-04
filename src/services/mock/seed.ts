@@ -1,0 +1,399 @@
+import {
+  LIMITE_DIARIO_PADRAO,
+  LIMITE_TRANSACAO_PADRAO,
+} from '@/domain/regras';
+import { lancamentoCompra, lancamentoRecarga } from '@/domain/ledger';
+import type {
+  Aluno,
+  Cartao,
+  Conta,
+  Dispositivo,
+  Lancamento,
+  Loja,
+  Notificacao,
+  Transacao,
+  Usuario,
+} from '@/domain/types';
+
+/** Gerador determinístico: a demonstração precisa ser sempre a mesma. */
+function rng(semente: number) {
+  let s = semente;
+  return () => {
+    s = (s * 1664525 + 1013904223) % 4294967296;
+    return s / 4294967296;
+  };
+}
+
+export const LOJAS: Loja[] = [
+  {
+    id: 'bar-do-ze',
+    nome: 'Bar do Zé',
+    descricao: 'Lanches, salgados e bebidas',
+    sigla: 'BZ',
+    abre: '07:00',
+    fecha: '18:00',
+    autorizada: true,
+    itensFrequentes: [
+      { nome: 'Pão de queijo', valorCentavos: 600 },
+      { nome: 'Coxinha', valorCentavos: 900 },
+      { nome: 'Misto quente', valorCentavos: 1200 },
+      { nome: 'Suco natural', valorCentavos: 800 },
+      { nome: 'Água', valorCentavos: 400 },
+      { nome: 'Combo lanche', valorCentavos: 1800 },
+    ],
+  },
+  {
+    id: 'la-brunita',
+    nome: 'La Brunita',
+    descricao: 'Cafeteria e confeitaria',
+    sigla: 'LB',
+    abre: '07:30',
+    fecha: '17:30',
+    autorizada: true,
+    itensFrequentes: [
+      { nome: 'Café expresso', valorCentavos: 700 },
+      { nome: 'Cappuccino', valorCentavos: 1100 },
+      { nome: 'Croissant', valorCentavos: 1400 },
+      { nome: 'Cookie', valorCentavos: 900 },
+      { nome: 'Bolo de cenoura', valorCentavos: 1200 },
+      { nome: 'Chocolate quente', valorCentavos: 1300 },
+    ],
+  },
+  {
+    id: 'saude-no-copo',
+    nome: 'Saúde no Copo',
+    descricao: 'Sucos, açaí e saladas de fruta',
+    sigla: 'SC',
+    abre: '08:00',
+    fecha: '17:00',
+    autorizada: true,
+    itensFrequentes: [
+      { nome: 'Suco detox', valorCentavos: 1500 },
+      { nome: 'Açaí 300ml', valorCentavos: 1900 },
+      { nome: 'Salada de frutas', valorCentavos: 1300 },
+      { nome: 'Vitamina de banana', valorCentavos: 1400 },
+      { nome: 'Água de coco', valorCentavos: 900 },
+      { nome: 'Wrap de frango', valorCentavos: 2200 },
+    ],
+  },
+];
+
+export interface EstadoMock {
+  usuarios: Usuario[];
+  alunos: Aluno[];
+  contas: Conta[];
+  cartoes: Cartao[];
+  transacoes: Transacao[];
+  lancamentos: Lancamento[];
+  notificacoes: Notificacao[];
+  dispositivos: Dispositivo[];
+  cobrancas: import('@/domain/types').Cobranca[];
+  auditoria: { id: string; autor: string; acao: string; criadoEm: string }[];
+  /** PINs guardados apenas como hash — nunca em texto plano. */
+  pins: Record<string, string>;
+  senhas: Record<string, string>;
+  idempotencia: Record<string, string>;
+}
+
+/** Hash didático (não criptográfico) — no backend real, use argon2id/bcrypt. */
+export function hash(valor: string): string {
+  let h = 5381;
+  for (let i = 0; i < valor.length; i++) {
+    h = ((h << 5) + h + valor.charCodeAt(i)) >>> 0;
+  }
+  return `sha$${h.toString(16)}`;
+}
+
+const ALUNO_HELENA: Aluno = {
+  id: 'alu_helena',
+  nome: 'Helena Ribeiro Antunes',
+  matricula: '2026081',
+  turma: '8º ano A',
+  contaId: 'cta_helena',
+  responsavelIds: ['usr_camila'],
+  maiorDeIdade: false,
+};
+
+const ALUNO_BENTO: Aluno = {
+  id: 'alu_bento',
+  nome: 'Bento Ribeiro Antunes',
+  matricula: '2026114',
+  turma: '5º ano B',
+  contaId: 'cta_bento',
+  responsavelIds: ['usr_camila'],
+  maiorDeIdade: false,
+};
+
+export function criarEstadoInicial(agora = new Date()): EstadoMock {
+  const aleatorio = rng(20260401);
+
+  const contas: Conta[] = [
+    {
+      id: 'cta_helena',
+      alunoId: 'alu_helena',
+      saldoCentavos: 0,
+      ativa: true,
+      limites: {
+        diarioCentavos: LIMITE_DIARIO_PADRAO,
+        porTransacaoCentavos: LIMITE_TRANSACAO_PADRAO,
+        lojasBloqueadas: [],
+      },
+      recargaAutomatica: { ativa: false, gatilhoCentavos: 2000, valorCentavos: 5000 },
+    },
+    {
+      id: 'cta_bento',
+      alunoId: 'alu_bento',
+      saldoCentavos: 0,
+      ativa: true,
+      limites: {
+        diarioCentavos: 3000,
+        porTransacaoCentavos: 2000,
+        lojasBloqueadas: ['bar-do-ze'],
+      },
+      recargaAutomatica: null,
+    },
+  ];
+
+  const cartoes: Cartao[] = [
+    {
+      id: 'crt_helena_v',
+      contaId: 'cta_helena',
+      tipo: 'virtual',
+      ultimos4: '4417',
+      titular: 'HELENA R ANTUNES',
+      turma: '8º ano A',
+      bloqueado: false,
+      ativo: true,
+      criadoEm: dias(agora, -240),
+    },
+    {
+      id: 'crt_helena_f',
+      contaId: 'cta_helena',
+      tipo: 'fisico',
+      ultimos4: '8032',
+      titular: 'HELENA R ANTUNES',
+      turma: '8º ano A',
+      bloqueado: false,
+      ativo: false,
+      criadoEm: dias(agora, -238),
+    },
+    {
+      id: 'crt_bento_v',
+      contaId: 'cta_bento',
+      tipo: 'virtual',
+      ultimos4: '2290',
+      titular: 'BENTO R ANTUNES',
+      turma: '5º ano B',
+      bloqueado: false,
+      ativo: true,
+      criadoEm: dias(agora, -190),
+    },
+  ];
+
+  const usuarios: Usuario[] = [
+    {
+      id: 'usr_helena',
+      nome: 'Helena Ribeiro Antunes',
+      email: 'helena@farroupilha.br',
+      perfil: 'aluno',
+      alunoId: 'alu_helena',
+      temPin: false,
+      biometriaAtiva: false,
+      notificacoes: { modo: 'toda_compra', acimaDeCentavos: 0, recargas: true },
+    },
+    {
+      id: 'usr_camila',
+      nome: 'Camila Ribeiro Antunes',
+      email: 'camila@farroupilha.br',
+      perfil: 'responsavel',
+      alunosIds: ['alu_helena', 'alu_bento'],
+      temPin: false,
+      biometriaAtiva: false,
+      notificacoes: { modo: 'acima_de', acimaDeCentavos: 2000, recargas: true },
+    },
+    {
+      id: 'usr_ze',
+      nome: 'José Rocha',
+      email: 'ze@barodoze.com.br',
+      perfil: 'lojista',
+      lojaId: 'bar-do-ze',
+      temPin: true,
+      biometriaAtiva: false,
+      notificacoes: { modo: 'nenhuma', acimaDeCentavos: 0, recargas: false },
+    },
+    {
+      id: 'usr_bruna',
+      nome: 'Bruna Salvi',
+      email: 'bruna@labrunita.com.br',
+      perfil: 'lojista',
+      lojaId: 'la-brunita',
+      temPin: true,
+      biometriaAtiva: false,
+      notificacoes: { modo: 'nenhuma', acimaDeCentavos: 0, recargas: false },
+    },
+    {
+      id: 'usr_admin',
+      nome: 'Secretaria Farroupilha',
+      email: 'secretaria@farroupilha.br',
+      perfil: 'admin',
+      temPin: true,
+      biometriaAtiva: false,
+      notificacoes: { modo: 'resumo_diario', acimaDeCentavos: 0, recargas: false },
+    },
+  ];
+
+  const estado: EstadoMock = {
+    usuarios,
+    alunos: [ALUNO_HELENA, ALUNO_BENTO],
+    contas,
+    cartoes,
+    transacoes: [],
+    lancamentos: [],
+    notificacoes: [],
+    dispositivos: [
+      { id: 'dsp_1', nome: 'iPhone 13 — Helena', ultimoAcesso: agora.toISOString(), atual: true },
+      { id: 'dsp_2', nome: 'iPad da sala', ultimoAcesso: dias(agora, -12), atual: false },
+    ],
+    cobrancas: [],
+    auditoria: [
+      {
+        id: 'aud_1',
+        autor: 'Secretaria Farroupilha',
+        acao: 'Cadastro da loja Saúde no Copo aprovado',
+        criadoEm: dias(agora, -30),
+      },
+      {
+        id: 'aud_2',
+        autor: 'Secretaria Farroupilha',
+        acao: 'Limite diário padrão alterado para R$ 50,00',
+        criadoEm: dias(agora, -21),
+      },
+    ],
+    pins: {},
+    senhas: Object.fromEntries(usuarios.map((u) => [u.id, hash('farroupilha')])),
+    idempotencia: {},
+  };
+
+  semearHistorico(estado, agora, aleatorio);
+  return estado;
+}
+
+/** 45 dias de recargas e compras, para o extrato e os gráficos não nascerem vazios. */
+function semearHistorico(estado: EstadoMock, agora: Date, aleatorio: () => number) {
+  const contas = estado.contas;
+  // Recargas na linha do tempo: entram no dia em que aconteceram, não de uma vez.
+  const agenda: Record<string, Record<number, number>> = {
+    cta_helena: { 42: 10000, 28: 10000, 13: 10000, 4: 10000 },
+    cta_bento: { 40: 6000, 15: 6000 },
+  };
+
+  for (let d = 44; d >= 0; d--) {
+    const data = new Date(agora.getTime() - d * 86400000);
+
+    for (const conta of contas) {
+      const recarga = agenda[conta.id]?.[d];
+      if (recarga) {
+        const quando = new Date(data);
+        quando.setHours(8, 15, 0, 0);
+        creditar(estado, conta, recarga, quando.toISOString(), 'pix');
+      }
+    }
+
+    const diaSemana = data.getDay();
+    if (diaSemana === 0 || diaSemana === 6) continue;
+
+    for (const conta of contas) {
+      const compras =
+        conta.id === 'cta_helena' ? (aleatorio() > 0.35 ? 2 : 1) : aleatorio() > 0.6 ? 1 : 0;
+      for (let i = 0; i < compras; i++) {
+        const loja = LOJAS[Math.floor(aleatorio() * LOJAS.length)];
+        if (conta.limites.lojasBloqueadas.includes(loja.id)) continue;
+        const item = loja.itensFrequentes[Math.floor(aleatorio() * loja.itensFrequentes.length)];
+        // Nunca gasta mais do que tem: o saldo do app jamais fica negativo.
+        if (conta.saldoCentavos < item.valorCentavos) continue;
+        const hora = 9 + Math.floor(aleatorio() * 7);
+        const minuto = Math.floor(aleatorio() * 60);
+        const quando = new Date(data);
+        quando.setHours(hora, minuto, 0, 0);
+        if (quando.getTime() > agora.getTime()) continue;
+        debitar(estado, conta, loja.id, item, quando.toISOString());
+      }
+    }
+  }
+
+  // Fecha a semeadura com uma recarga recente: a demonstração começa com saldo.
+  for (const conta of contas) {
+    const alvo = conta.id === 'cta_helena' ? 8700 : 4200;
+    if (conta.saldoCentavos < alvo) {
+      creditar(estado, conta, alvo - conta.saldoCentavos, dias(agora, -1), 'pix');
+    }
+  }
+
+  estado.transacoes.sort((a, b) => b.criadaEm.localeCompare(a.criadaEm));
+}
+
+function creditar(
+  estado: EstadoMock,
+  conta: Conta,
+  valorCentavos: number,
+  criadaEm: string,
+  metodo: 'pix' | 'credito',
+) {
+  const idTransacao = `trx_seed_${estado.transacoes.length + 1}`;
+  conta.saldoCentavos += valorCentavos;
+  const descricao = metodo === 'pix' ? 'Recarga via Pix' : 'Recarga no cartão de crédito';
+  const lanc = lancamentoRecarga(conta.id, valorCentavos, idTransacao, descricao);
+  lanc.criadoEm = criadaEm;
+  estado.lancamentos.push(lanc);
+  estado.transacoes.push({
+    id: idTransacao,
+    contaId: conta.id,
+    tipo: 'credito',
+    status: 'aprovada',
+    valorCentavos,
+    criadaEm,
+    descricao,
+    metodo,
+    chaveIdempotencia: idTransacao,
+    lancamentoId: lanc.id,
+  });
+}
+
+function debitar(
+  estado: EstadoMock,
+  conta: Conta,
+  lojaId: Loja['id'],
+  item: { nome: string; valorCentavos: number },
+  criadaEm: string,
+) {
+  const idTransacao = `trx_seed_${estado.transacoes.length + 1}`;
+  conta.saldoCentavos -= item.valorCentavos;
+  const loja = LOJAS.find((l) => l.id === lojaId)!;
+  const lanc = lancamentoCompra(conta.id, lojaId, item.valorCentavos, idTransacao, loja.nome);
+  lanc.criadoEm = criadaEm;
+  estado.lancamentos.push(lanc);
+  estado.transacoes.push({
+    id: idTransacao,
+    contaId: conta.id,
+    tipo: 'debito',
+    status: 'aprovada',
+    valorCentavos: item.valorCentavos,
+    criadaEm,
+    descricao: loja.nome,
+    lojaId,
+    forma: 'cartao',
+    itens: [item],
+    operadorId: 'usr_ze',
+    chaveIdempotencia: idTransacao,
+    lancamentoId: lanc.id,
+  });
+}
+
+function dias(base: Date, delta: number): string {
+  return new Date(base.getTime() + delta * 86400000).toISOString();
+}
+
+export const CODIGOS_VINCULO: Record<string, string> = {
+  '8ANO-HELENA': 'alu_helena',
+  '5ANO-BENTO': 'alu_bento',
+};

@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Farroups-pay",
+    "slug": "farroups-pay",
+    "version": "1.0.0",
+    "scheme": "farroupspay",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "backgroundColor": "#FAFAF8",
+    "splash": {
+      "backgroundColor": "#FAFAF8",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "br.com.farroupilha.farroupspay",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Usamos o Face ID para autorizar pagamentos e o acesso à sua carteira."
+      }
+    },
+    "android": {
+      "package": "br.com.farroupilha.farroupspay",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#C4122F"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-local-authentication",
+        { "faceIDPermission": "Usamos o Face ID para autorizar pagamentos e o acesso à sua carteira." }
+      ]
+    ],
+    "experiments": { "typedRoutes": false }
+  }
+}
