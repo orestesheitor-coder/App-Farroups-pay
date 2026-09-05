@@ -7,9 +7,10 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "backgroundColor": "#FAFAF8",
+    "backgroundColor": "#F6F8FC",
     "splash": {
-      "backgroundColor": "#FAFAF8",
+      "image": "./assets/splash.png",
+      "backgroundColor": "#14488F",
       "resizeMode": "contain"
     },
     "ios": {
@@ -22,21 +23,28 @@
     "android": {
       "package": "br.com.farroupilha.farroupspay",
       "adaptiveIcon": {
-        "backgroundColor": "#C4122F"
+        "foregroundImage": "./assets/icone-adaptativo.png",
+        "backgroundColor": "#14488F"
       }
     },
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
       "expo-font",
       [
         "expo-local-authentication",
-        { "faceIDPermission": "Usamos o Face ID para autorizar pagamentos e o acesso à sua carteira." }
+        {
+          "faceIDPermission": "Usamos o Face ID para autorizar pagamentos e o acesso à sua carteira."
+        }
       ]
     ],
-    "experiments": { "typedRoutes": false }
+    "experiments": {
+      "typedRoutes": false
+    },
+    "icon": "./assets/icone.png"
   }
 }

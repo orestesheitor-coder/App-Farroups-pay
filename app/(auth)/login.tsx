@@ -22,25 +22,25 @@ const ALUNOS = [
   {
     rotulo: 'Bento',
     login: 'bento@farroupilha.br',
-    descricao: '5º ano B · anos iniciais',
+    descricao: '5º ano B',
     faixa: 'Infantil',
   },
   {
     rotulo: 'Helena',
     login: 'helena@farroupilha.br',
-    descricao: '8º ano A · anos finais',
+    descricao: '8º ano A',
     faixa: 'Padrão',
   },
   {
     rotulo: 'Antonella',
     login: 'antonella@farroupilha.br',
-    descricao: '1º ano EM · Ensino Médio',
+    descricao: '1º ano EM',
     faixa: 'Profissional',
   },
   {
     rotulo: 'Théo',
     login: 'theo@farroupilha.br',
-    descricao: '3º ano EM · Ensino Médio',
+    descricao: '3º ano EM · maior de idade',
     faixa: 'Profissional',
   },
 ];

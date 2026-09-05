@@ -93,7 +93,7 @@ export function CartaoVirtual({
           }}
         />
         <View style={{ position: 'absolute', right: -14, bottom: -18, opacity: 0.14 }}>
-          <SeloFarroupilha tamanho={148} cor="#FFFFFF" />
+          <SeloFarroupilha tamanho={158} cor="#FFFFFF" ondas />
         </View>
         {/* A marca do colégio fica fixa no cartão, como num cartão emitido por banco. */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
