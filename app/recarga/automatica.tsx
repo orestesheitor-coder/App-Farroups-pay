@@ -20,6 +20,13 @@ import {
   useAlerta,
 } from '@/ui';
 
+/**
+ * Quantas recargas automáticas podem sair num mesmo dia. Cada uma é uma
+ * cobrança no cartão do responsável, então o teto existe para que um gatilho
+ * mal calibrado não vire uma fila de cobranças.
+ */
+const MAXIMO_POR_DIA = 2;
+
 export default function RecargaAutomatica() {
   const { conta } = useLocalSearchParams<{ conta: string }>();
   const { usuario, alunoAtivoId, invalidar, versao } = useSessao();
@@ -51,6 +58,7 @@ export default function RecargaAutomatica() {
         ativa,
         gatilhoCentavos: parseCentavos(gatilho),
         valorCentavos: parseCentavos(valor),
+        maximoPorDia: MAXIMO_POR_DIA,
       });
       invalidar();
       avisar(ativa ? 'Recarga automática ativada.' : 'Recarga automática desativada.', 'sucesso');

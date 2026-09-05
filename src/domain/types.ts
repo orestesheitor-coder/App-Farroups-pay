@@ -64,6 +64,12 @@ export interface RecargaAutomatica {
   ativa: boolean;
   gatilhoCentavos: number;
   valorCentavos: number;
+  /**
+   * Teto de recargas automáticas por dia civil. Sem ele, uma configuração
+   * infeliz (gatilho alto e valor baixo) recarrega a cada compra, e cada
+   * recarga é uma cobrança no cartão do responsável.
+   */
+  maximoPorDia: number;
 }
 
 export type TipoCartao = 'virtual' | 'fisico';
@@ -160,6 +166,12 @@ export interface Usuario {
   /** Só para o perfil aluno: veste o app conforme a idade. */
   segmento?: Segmento;
   temPin: boolean;
+  /**
+   * Quantos dígitos tem o PIN cadastrado. A folha de autorização precisa
+   * saber: fixada em 4, ela nunca aceitaria um PIN de 6 e deixaria a conta
+   * sem como autorizar compras acima do limite.
+   */
+  tamanhoPin?: 4 | 6;
   biometriaAtiva: boolean;
   notificacoes: PreferenciasNotificacao;
 }

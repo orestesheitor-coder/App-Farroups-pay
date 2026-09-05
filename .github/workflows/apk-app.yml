@@ -59,6 +59,11 @@ jobs:
         working-directory: android
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g
+          # Este APK é assumidamente uma demonstração: roda sobre o mock, que
+          # guarda credenciais no aparelho e autoriza pagamentos sem servidor.
+          # A trava em src/services/index.ts derruba o app sem esta declaração,
+          # justamente para que um build de produção nunca saia por descuido.
+          EXPO_PUBLIC_PERMITIR_MOCK: '1'
         # arm64-v8a cobre os aparelhos atuais; x86_64 cobre emuladores.
         run: ./gradlew assembleRelease --no-daemon --stacktrace -PreactNativeArchitectures=arm64-v8a,x86_64
 

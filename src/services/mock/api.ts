@@ -32,6 +32,17 @@ import { CODIGOS_VINCULO, hash, LOJAS, type EstadoMock } from './seed';
 
 const CHAVE_SESSAO = 'farroupspay:sessao:v1';
 
+/**
+ * Sessão por inatividade: cada uso renova, doze horas parado derruba.
+ *
+ * Eram quinze minutos absolutos — mas nada conferia o prazo e não existe
+ * renovação por refresh token, então na prática a sessão era eterna. Quinze
+ * minutos de verdade expulsariam o usuário no meio do recreio; doze horas de
+ * inatividade fecham a janela do aparelho perdido sem atrapalhar o uso diário.
+ * No backend real isso vira access token curto + rotação de refresh token.
+ */
+const INATIVIDADE_ATE_EXPIRAR_MS = 12 * 60 * 60 * 1000;
+
 function loja(lojaId: LojaId | undefined): Loja | undefined {
   return LOJAS.find((l) => l.id === lojaId);
 }
@@ -102,11 +113,49 @@ function notificarResponsaveis(estado: EstadoMock, transacao: Transacao) {
   }
 }
 
-/** Recarga automática: dispara quando o saldo cai abaixo do gatilho. */
+/** Teto absoluto de recargas automáticas por dia, mesmo que a conta peça mais. */
+const MAXIMO_RECARGAS_AUTOMATICAS_DIA = 3;
+
+/**
+ * Recarga automática: dispara quando o saldo cai abaixo do gatilho.
+ *
+ * Cada disparo é dinheiro saindo do cartão do responsável, então o número de
+ * disparos por dia é limitado. Sem esse teto, um gatilho mal configurado — ou
+ * uma fraude com o cartão físico do aluno — vira uma sequência de cobranças
+ * sem fim, e o responsável só descobre na fatura.
+ */
 function talvezRecarregar(estado: EstadoMock, conta: Conta) {
   const config = conta.recargaAutomatica;
   if (!config?.ativa) return;
   if (conta.saldoCentavos >= config.gatilhoCentavos) return;
+
+  const hoje = diaSP(new Date().toISOString());
+  const jaHoje = estado.transacoes.filter(
+    (t) =>
+      t.contaId === conta.id &&
+      t.tipo === 'credito' &&
+      t.descricao === 'Recarga automática via Pix' &&
+      diaSP(t.criadaEm) === hoje,
+  ).length;
+  const teto = Math.min(
+    config.maximoPorDia ?? MAXIMO_RECARGAS_AUTOMATICAS_DIA,
+    MAXIMO_RECARGAS_AUTOMATICAS_DIA,
+  );
+  if (jaHoje >= teto) {
+    const responsavel = estado.usuarios.find((u) =>
+      u.alunosIds?.includes(conta.alunoId),
+    );
+    if (responsavel) {
+      notificar(
+        estado,
+        responsavel.id,
+        'Recarga automática pausada',
+        `O limite de ${teto} recargas automáticas de hoje foi atingido. Recarregue manualmente se precisar.`,
+      );
+    }
+    return;
+  }
+
   const transacaoId = id('trx');
   conta.saldoCentavos += config.valorCentavos;
   const lanc = lancamentoRecarga(
@@ -161,6 +210,46 @@ function filtrar(transacoes: Transacao[], filtros?: FiltrosExtrato): Transacao[]
   return lista.sort((a, b) => b.criadaEm.localeCompare(a.criadaEm));
 }
 
+/** Erros de PIN tolerados antes de travar, e por quanto tempo. */
+const ERROS_ATE_TRAVAR = 5;
+const TRAVA_PIN_MS = 5 * 60 * 1000;
+
+/**
+ * Um PIN de quatro dígitos tem dez mil combinações: sem limite de tentativas,
+ * quem estiver com o aparelho na mão chega nele em minutos. A trava é
+ * progressiva no tempo e nunca é apagada por conferência bem-sucedida antes de
+ * vencer — senão bastaria acertar o próprio PIN para zerar a contagem alheia.
+ */
+function conferirTravaPin(estado: EstadoMock, usuarioId: string) {
+  const registro = estado.tentativasPin?.[usuarioId];
+  if (!registro?.travadoAte) return;
+  const ate = Date.parse(registro.travadoAte);
+  if (Number.isFinite(ate) && ate > Date.now()) {
+    const minutos = Math.max(1, Math.ceil((ate - Date.now()) / 60000));
+    throw new ErroApi(
+      `Muitas tentativas. Tente de novo em ${minutos} min.`,
+      'pin_travado',
+    );
+  }
+}
+
+function registrarErroDePin(estado: EstadoMock, usuarioId: string) {
+  if (!estado.tentativasPin) estado.tentativasPin = {};
+  const registro = estado.tentativasPin[usuarioId] ?? { erros: 0 };
+  registro.erros += 1;
+  if (registro.erros >= ERROS_ATE_TRAVAR) {
+    registro.travadoAte = new Date(Date.now() + TRAVA_PIN_MS).toISOString();
+    registro.erros = 0;
+  }
+  estado.tentativasPin[usuarioId] = registro;
+}
+
+function limparErrosDePin(estado: EstadoMock, usuarioId: string) {
+  if (estado.tentativasPin?.[usuarioId]) {
+    delete estado.tentativasPin[usuarioId];
+  }
+}
+
 export const mockApi: Api = {
   auth: {
     async entrar(login, senha) {
@@ -181,7 +270,7 @@ export const mockApi: Api = {
       const sessao: Sessao = {
         token: id('tok'),
         refreshToken: id('rfh'),
-        expiraEm: new Date(Date.now() + 15 * 60000).toISOString(),
+        expiraEm: new Date(Date.now() + INATIVIDADE_ATE_EXPIRAR_MS).toISOString(),
         usuario,
         dispositivo: 'Este dispositivo',
       };
@@ -195,8 +284,25 @@ export const mockApi: Api = {
         const bruto = await AsyncStorage.getItem(CHAVE_SESSAO);
         if (!bruto) return null;
         const sessao = JSON.parse(bruto) as Sessao;
+        // `expiraEm` era gravado e nunca conferido: a sessão durava para
+        // sempre. Num aparelho perdido, isso é acesso permanente à carteira.
+        const expiracao = Date.parse(sessao.expiraEm);
+        if (!Number.isFinite(expiracao) || expiracao <= Date.now()) {
+          await AsyncStorage.removeItem(CHAVE_SESSAO);
+          return null;
+        }
         const atual = estado.usuarios.find((u) => u.id === sessao.usuario.id);
-        return atual ? { ...sessao, usuario: atual } : null;
+        if (!atual) {
+          await AsyncStorage.removeItem(CHAVE_SESSAO);
+          return null;
+        }
+        const renovada: Sessao = {
+          ...sessao,
+          usuario: atual,
+          expiraEm: new Date(Date.now() + INATIVIDADE_ATE_EXPIRAR_MS).toISOString(),
+        };
+        await AsyncStorage.setItem(CHAVE_SESSAO, JSON.stringify(renovada));
+        return renovada;
       } catch {
         return null;
       }
@@ -214,14 +320,25 @@ export const mockApi: Api = {
       }
       estado.pins[usuarioId] = hash(pin);
       const usuario = estado.usuarios.find((u) => u.id === usuarioId);
-      if (usuario) usuario.temPin = true;
+      if (usuario) {
+        usuario.temPin = true;
+        usuario.tamanhoPin = pin.length === 6 ? 6 : 4;
+      }
+      // PIN novo zera a trava: quem provou ser o dono não deve herdar a
+      // contagem de erros de quem tentou adivinhar.
+      limparErrosDePin(estado, usuarioId);
       await persistir();
     },
 
     async validarPin(usuarioId, pin) {
       await atraso(220);
       const estado = await db();
-      return estado.pins[usuarioId] === hash(pin);
+      conferirTravaPin(estado, usuarioId);
+      const confere = estado.pins[usuarioId] === hash(pin);
+      if (confere) limparErrosDePin(estado, usuarioId);
+      else registrarErroDePin(estado, usuarioId);
+      await persistir();
+      return confere;
     },
 
     async ativarBiometria(usuarioId, ativa) {
@@ -657,9 +774,22 @@ export const mockApi: Api = {
       if (avaliacao.exigeAutenticacao && !pedido.biometria) {
         const usuario = estado.usuarios.find((u) => u.alunoId === conta.alunoId);
         const hashPin = usuario ? estado.pins[usuario.id] : undefined;
-        if (!pedido.pin || !hashPin || hashPin !== hash(pedido.pin)) {
+        // Sem usuário ou sem PIN cadastrado a compra não passa: antes, um
+        // `hashPin` indefinido caía no mesmo erro genérico de PIN errado e
+        // deixava a conta sem forma de autorizar valores altos.
+        if (!usuario || !hashPin) {
+          throw new ErroApi(
+            'Esta conta ainda não tem PIN. Cadastre um em Perfil para autorizar valores acima do limite.',
+            'pin_nao_cadastrado',
+          );
+        }
+        conferirTravaPin(estado, usuario.id);
+        if (!pedido.pin || hashPin !== hash(pedido.pin)) {
+          registrarErroDePin(estado, usuario.id);
+          await persistir();
           throw new ErroApi('PIN incorreto. Tente novamente.', 'pin_incorreto');
         }
+        limparErrosDePin(estado, usuario.id);
       }
 
       conta.saldoCentavos -= pedido.valorCentavos;

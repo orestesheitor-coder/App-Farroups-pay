@@ -10,6 +10,7 @@ export function FolhaAutenticacao({
   visivel,
   valorCentavos,
   biometriaAtiva,
+  tamanhoPin = 4,
   erro,
   aoFechar,
   aoConfirmar,
@@ -17,6 +18,8 @@ export function FolhaAutenticacao({
   visivel: boolean;
   valorCentavos: number;
   biometriaAtiva: boolean;
+  /** Quantos dígitos tem o PIN desta conta. Estava fixo em 4. */
+  tamanhoPin?: 4 | 6;
   erro?: string | null;
   aoFechar: () => void;
   aoConfirmar: (dados: { pin?: string; biometria?: boolean }) => void;
@@ -29,15 +32,18 @@ export function FolhaAutenticacao({
   }, [visivel]);
 
   useEffect(() => {
-    if (pin.length === 4) {
-      const digitado = pin;
-      setTimeout(() => {
-        aoConfirmar({ pin: digitado });
-        setPin('');
-      }, 140);
-    }
+    if (pin.length !== tamanhoPin) return;
+    const digitado = pin;
+    // O timer precisa ser cancelado na limpeza: sem isso, fechar a folha nos
+    // 140 ms seguintes ainda dispara a cobrança — o usuário cancela e paga
+    // mesmo assim.
+    const t = setTimeout(() => {
+      aoConfirmar({ pin: digitado });
+      setPin('');
+    }, 140);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pin]);
+  }, [pin, tamanhoPin]);
 
   async function comBiometria() {
     const r = await LocalAuthentication.authenticateAsync({
@@ -56,7 +62,7 @@ export function FolhaAutenticacao({
     >
       <View style={{ gap: 16 }}>
         <View style={{ paddingVertical: 10 }}>
-          <PontosPin tamanho={4} preenchidos={pin.length} erro={!!erro} />
+          <PontosPin tamanho={tamanhoPin} preenchidos={pin.length} erro={!!erro} />
         </View>
         {erro && (
           <Texto variante="legenda" centro cor={cores.alerta}>
@@ -66,7 +72,7 @@ export function FolhaAutenticacao({
         <TecladoNumerico
           compacto
           mostrarVirgula={false}
-          aoDigitar={(d) => setPin((p) => (p + d).slice(0, 4))}
+          aoDigitar={(d) => setPin((p) => (p + d).slice(0, tamanhoPin))}
           aoApagar={() => setPin((p) => p.slice(0, -1))}
         />
         {biometriaAtiva && (

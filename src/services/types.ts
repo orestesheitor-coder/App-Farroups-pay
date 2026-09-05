@@ -199,12 +199,22 @@ export interface NotificacoesApi {
 }
 
 export class ErroApi extends Error {
-  constructor(
-    message: string,
-    readonly codigo: string = 'erro_generico',
-    readonly detalhes?: unknown,
-  ) {
+  /**
+   * Campos declarados no corpo, não como parâmetros do construtor.
+   *
+   * `readonly codigo: string` na assinatura é uma *parameter property*: açúcar
+   * do TypeScript que gera atribuição em tempo de execução, e por isso não é
+   * sintaxe apagável. Isso quebrava qualquer ferramenta que só remove tipos —
+   * entre elas o executor de testes do Node, que não conseguia carregar nada
+   * que importasse este módulo, deixando a camada de API sem teste.
+   */
+  readonly codigo: string;
+  readonly detalhes?: unknown;
+
+  constructor(message: string, codigo = 'erro_generico', detalhes?: unknown) {
     super(message);
     this.name = 'ErroApi';
+    this.codigo = codigo;
+    this.detalhes = detalhes;
   }
 }

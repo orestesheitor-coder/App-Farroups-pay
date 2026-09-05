@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,13 +30,21 @@ export default function CriarPin() {
 
   const digitos = Number(tamanho);
 
+  // O timer do avanço automático vive num ref para poder ser cancelado quando
+  // a tela sai — senão `concluir` roda depois da desmontagem.
+  const timerAvanco = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (timerAvanco.current) clearTimeout(timerAvanco.current);
+  }, []);
+
   function digitar(d: string) {
     if (d === ',') return;
     setErro(false);
     const proximo = (atual + d).slice(0, digitos);
     setAtual(proximo);
     if (proximo.length === digitos) {
-      setTimeout(() => concluir(proximo), 160);
+      if (timerAvanco.current) clearTimeout(timerAvanco.current);
+      timerAvanco.current = setTimeout(() => concluir(proximo), 160);
     }
   }
 

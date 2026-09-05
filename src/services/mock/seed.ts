@@ -94,15 +94,28 @@ export interface EstadoMock {
   pins: Record<string, string>;
   senhas: Record<string, string>;
   idempotencia: Record<string, string>;
+  /** Tentativas erradas de PIN por usuário, para travar a força bruta. */
+  tentativasPin: Record<string, { erros: number; travadoAte?: string }>;
 }
 
-/** Hash didático (não criptográfico) — no backend real, use argon2id/bcrypt. */
+/**
+ * Ofuscação didática, NÃO é hash criptográfico.
+ *
+ * É DJB2 de 32 bits, sem sal e sem custo de trabalho: um PIN de quatro dígitos
+ * cai por força bruta em milissegundos. O prefixo era `sha$`, o que dava a
+ * entender que havia SHA aqui — não há, e o nome agora diz isso em voz alta,
+ * porque a trava de produção em `services/index.ts` depende de ninguém
+ * confundir os dois.
+ *
+ * No backend real: argon2id (ou bcrypt), com sal por usuário, e o PIN nunca
+ * verificado no cliente.
+ */
 export function hash(valor: string): string {
   let h = 5381;
   for (let i = 0; i < valor.length; i++) {
     h = ((h << 5) + h + valor.charCodeAt(i)) >>> 0;
   }
-  return `sha$${h.toString(16)}`;
+  return `inseguro$${h.toString(16)}`;
 }
 
 const ALUNO_HELENA: Aluno = {
@@ -164,7 +177,12 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
         porTransacaoCentavos: LIMITE_TRANSACAO_PADRAO,
         lojasBloqueadas: [],
       },
-      recargaAutomatica: { ativa: false, gatilhoCentavos: 2000, valorCentavos: 5000 },
+      recargaAutomatica: {
+        ativa: false,
+        gatilhoCentavos: 2000,
+        valorCentavos: 5000,
+        maximoPorDia: 2,
+      },
     },
     {
       id: 'cta_bento',
@@ -188,7 +206,12 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
         porTransacaoCentavos: 5000,
         lojasBloqueadas: [],
       },
-      recargaAutomatica: { ativa: false, gatilhoCentavos: 3000, valorCentavos: 8000 },
+      recargaAutomatica: {
+        ativa: false,
+        gatilhoCentavos: 3000,
+        valorCentavos: 8000,
+        maximoPorDia: 2,
+      },
     },
     {
       id: 'cta_theo',
@@ -282,6 +305,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       alunoId: 'alu_helena',
       segmento: 'padrao',
       temPin: true,
+  tamanhoPin: 4 as const,
       biometriaAtiva: false,
       notificacoes: { modo: 'toda_compra', acimaDeCentavos: 0, recargas: true },
     },
@@ -292,6 +316,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       perfil: 'responsavel',
       alunosIds: ['alu_helena', 'alu_bento', 'alu_antonella', 'alu_theo'],
       temPin: true,
+  tamanhoPin: 4 as const,
       biometriaAtiva: false,
       notificacoes: { modo: 'acima_de', acimaDeCentavos: 2000, recargas: true },
     },
@@ -303,6 +328,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       alunoId: 'alu_bento',
       segmento: 'infantil',
       temPin: true,
+  tamanhoPin: 4 as const,
       biometriaAtiva: false,
       notificacoes: { modo: 'toda_compra', acimaDeCentavos: 0, recargas: true },
     },
@@ -314,6 +340,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       alunoId: 'alu_antonella',
       segmento: 'profissional',
       temPin: true,
+  tamanhoPin: 4 as const,
       biometriaAtiva: false,
       notificacoes: { modo: 'acima_de', acimaDeCentavos: 3000, recargas: true },
     },
@@ -325,6 +352,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       alunoId: 'alu_theo',
       segmento: 'profissional',
       temPin: true,
+  tamanhoPin: 4 as const,
       biometriaAtiva: false,
       notificacoes: { modo: 'resumo_diario', acimaDeCentavos: 0, recargas: false },
     },
@@ -335,6 +363,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       perfil: 'lojista',
       lojaId: 'bar-do-ze',
       temPin: true,
+  tamanhoPin: 4 as const,
       biometriaAtiva: false,
       notificacoes: { modo: 'nenhuma', acimaDeCentavos: 0, recargas: false },
     },
@@ -345,6 +374,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       perfil: 'lojista',
       lojaId: 'la-brunita',
       temPin: true,
+  tamanhoPin: 4 as const,
       biometriaAtiva: false,
       notificacoes: { modo: 'nenhuma', acimaDeCentavos: 0, recargas: false },
     },
@@ -354,6 +384,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       email: 'secretaria@farroupilha.br',
       perfil: 'admin',
       temPin: true,
+  tamanhoPin: 4 as const,
       biometriaAtiva: false,
       notificacoes: { modo: 'resumo_diario', acimaDeCentavos: 0, recargas: false },
     },
@@ -427,6 +458,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
     // Contas de demonstração já vêm com o PIN 1234 definido, para trocar entre
     // as faixas etárias sem repetir o cadastro a cada login. A criação de PIN
     // continua disponível em Perfil → Alterar PIN.
+    tentativasPin: {},
     pins: Object.fromEntries(usuarios.map((u) => [u.id, hash('1234')])),
     senhas: Object.fromEntries(usuarios.map((u) => [u.id, hash('farroupilha')])),
     idempotencia: {},

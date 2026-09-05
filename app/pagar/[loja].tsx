@@ -310,6 +310,7 @@ export default function PagarNaLoja() {
         visivel={pedirPin}
         valorCentavos={totalCentavos}
         biometriaAtiva={!!usuario?.biometriaAtiva}
+        tamanhoPin={usuario?.tamanhoPin ?? 4}
         erro={erroPin}
         aoFechar={() => {
           setPedirPin(false);
