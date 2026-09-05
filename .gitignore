@@ -11,3 +11,9 @@ web-build/
 npm-debug.*
 expo-env.d.ts
 .env*.local
+
+# Build do app de demonstração
+demo/android/build/
+demo/android/app/build/
+demo/android/.gradle/
+demo/android/local.properties

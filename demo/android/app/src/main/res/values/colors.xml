@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Mesmos tokens de src/theme/tokens.ts -->
+  <color name="fundo">#FAFAF8</color>
+  <color name="marca">#C4122F</color>
+</resources>

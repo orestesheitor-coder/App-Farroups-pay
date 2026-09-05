@@ -1,0 +1,53 @@
+plugins {
+  id 'com.android.application'
+}
+
+// A vitrine vive em demo/farroups-pay-ao-vivo.html — fonte única.
+// O Gradle a copia para os assets antes de compilar, aqui e no CI.
+def dirVitrine = layout.buildDirectory.dir("vitrine").get().asFile
+
+tasks.register('copiarVitrine', Copy) {
+  from(rootProject.file('../farroups-pay-ao-vivo.html')) {
+    rename { 'index.html' }
+  }
+  into dirVitrine
+}
+
+android {
+  namespace 'br.com.farroupilha.farroupspay.demo'
+  compileSdk 35
+
+  defaultConfig {
+    applicationId "br.com.farroupilha.farroupspay.demo"
+    minSdk 26
+    targetSdk 35
+    versionCode 1
+    versionName "1.0"
+  }
+
+  buildTypes {
+    debug {
+      applicationIdSuffix ".debug"
+    }
+    release {
+      minifyEnabled false
+      // Sem keystore própria: o APK de release sai sem assinatura e serve só
+      // para inspeção. Para instalar, use o APK de debug.
+    }
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  sourceSets {
+    main {
+      assets.srcDirs += dirVitrine
+    }
+  }
+}
+
+tasks.named('preBuild') {
+  dependsOn 'copiarVitrine'
+}
