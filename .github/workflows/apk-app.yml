@@ -1,0 +1,94 @@
+name: APK do app
+
+# Compila o app Expo de verdade — todas as telas, persistência e regras — como
+# um APK de release, que embute o JavaScript e roda sozinho no aparelho, sem
+# Metro e sem computador por perto.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'app/**'
+      - 'src/**'
+      - 'app.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/apk-app.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: Compilar APK do app
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar o Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Preparar a JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar o Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar as dependências
+        run: npm ci
+
+      - name: Checagem de tipos
+        run: npm run typecheck
+
+      - name: Testes das regras de negócio
+        run: npm test
+
+      - name: Gerar o projeto Android
+        run: npx expo prebuild --platform android --no-install
+        env:
+          EXPO_NO_TELEMETRY: '1'
+          CI: '1'
+
+      - name: Compilar o APK de release
+        working-directory: android
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g
+        # arm64-v8a cobre os aparelhos atuais; x86_64 cobre emuladores.
+        run: ./gradlew assembleRelease --no-daemon --stacktrace -PreactNativeArchitectures=arm64-v8a,x86_64
+
+      - name: Conferir que o app roda sozinho
+        run: |
+          apk=$(find android/app/build/outputs/apk/release -name '*.apk' | head -1)
+          echo "APK: $apk"
+          ls -lh "$apk"
+          # O bundle embutido é o que dispensa o Metro no aparelho.
+          unzip -l "$apk" | grep -E 'assets/index\.android\.bundle' || {
+            echo "::error::O JavaScript não foi embutido: o app dependeria do Metro"
+            exit 1
+          }
+          tamanho=$(unzip -l "$apk" | awk '/assets\/index\.android\.bundle/ {print $1}')
+          echo "bundle JavaScript: $tamanho bytes"
+          if [ "$tamanho" -lt 500000 ]; then
+            echo "::error::O bundle saiu pequeno demais ($tamanho bytes)"
+            exit 1
+          fi
+          unzip -l "$apk" | grep -q 'lib/arm64-v8a/libhermes' || {
+            echo "::error::A engine Hermes não foi empacotada"
+            exit 1
+          }
+          echo "APK autônomo confirmado."
+          cp "$apk" farroups-pay.apk
+
+      - name: Publicar o APK como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: farroups-pay-apk
+          path: farroups-pay.apk
+          if-no-files-found: error
+          retention-days: 30
