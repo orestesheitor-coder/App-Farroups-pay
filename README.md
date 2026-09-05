@@ -78,7 +78,20 @@ fonte do sistema.
 O projeto usa *Continuous Native Generation*: as pastas `android/` e `ios/` não são
 versionadas, o Expo as gera na hora do build. Há dois caminhos.
 
-**Na nuvem, sem instalar Android Studio** (recomendado — sai um `.apk` para baixar):
+**Pelo GitHub Actions, sem conta Expo e sem Android Studio** (mais direto): o
+workflow *APK do app* roda typecheck, testes, gera o projeto nativo e compila um
+APK de **release** — com o JavaScript embutido, ou seja, o app roda sozinho no
+aparelho, sem Metro e sem computador ligado. Baixe em **Actions → APK do app → a
+execução → Artifacts → `farroups-pay-apk`**, ou dispare manualmente em *Run
+workflow*. A primeira compilação leva de 20 a 40 minutos porque o React Native
+com a nova arquitetura compila o C++ de cada módulo; as seguintes reaproveitam o
+cache do Gradle.
+
+O APK é assinado com a chave de depuração que o Expo configura por padrão, então
+o Android pede para permitir "fontes desconhecidas" na primeira instalação.
+
+**Pelo EAS, com conta Expo** (útil quando quiser assinatura gerenciada e
+distribuição interna):
 
 ```bash
 npm install -g eas-cli
