@@ -1,0 +1,79 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "1 · Instalar dependências",
+      "type": "shell",
+      "command": "npm install",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "2 · Rodar no emulador Android",
+      "detail": "Abre o emulador que estiver ligado e instala o app nele.",
+      "type": "shell",
+      "command": "npx expo start --go --android",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "2 · Rodar no simulador iOS (só macOS)",
+      "detail": "Precisa de Xcode instalado. Em Windows ou Linux não funciona.",
+      "type": "shell",
+      "command": "npx expo start --go --ios",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "2 · Rodar no navegador",
+      "type": "shell",
+      "command": "npx expo start --web",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "2 · Servidor Expo (escolher o alvo depois)",
+      "detail": "Sobe o servidor e mostra o QR Code. No terminal: a = Android, i = iOS, w = web.",
+      "type": "shell",
+      "command": "npx expo start --go",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Socorro · Limpar o cache do Metro",
+      "detail": "Use quando a tela ficar branca ou o app não refletir uma alteração.",
+      "type": "shell",
+      "command": "npx expo start --go --clear",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Socorro · Listar emuladores conectados",
+      "type": "shell",
+      "command": "adb devices -l",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Checagem de tipos",
+      "type": "shell",
+      "command": "npm run typecheck",
+      "problemMatcher": ["$tsc"],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Testes",
+      "type": "shell",
+      "command": "npm test",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "group": { "kind": "test", "isDefault": true }
+    }
+  ]
+}

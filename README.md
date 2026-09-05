@@ -31,6 +31,21 @@ npm run typecheck  # TypeScript em modo estrito
 npm test           # regras de negócio, ledger e formatação
 ```
 
+### No emulador, a partir do VS Code
+
+Todas as dependências do projeto estão contidas no Expo Go, então o app roda no
+emulador sem compilar nada de nativo — basta o servidor de desenvolvimento.
+
+Pré-requisitos: **Node 20+**, **Git** e o **Android Studio** (que é quem fornece o
+emulador; o VS Code não cria um). No macOS, o Xcode dá o simulador de iPhone.
+
+1. Abra a pasta do projeto no VS Code.
+2. Ligue o emulador no Android Studio (*Device Manager* → ▶ no aparelho virtual).
+3. `Ctrl+Shift+P` → **Tasks: Run Task** → **2 · Rodar no emulador Android**.
+
+As tarefas ficam em `.vscode/tasks.json` e cobrem também o simulador de iOS, o
+navegador, a limpeza de cache do Metro e a listagem de emuladores conectados.
+
 ## Demonstração sem instalar nada
 
 `demo/farroups-pay-ao-vivo.html` é o app inteiro reescrito em um único arquivo HTML,

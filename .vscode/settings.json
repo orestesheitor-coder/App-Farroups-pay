@@ -1,0 +1,18 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "files.exclude": {
+    "**/.expo": true,
+    "**/dist": true,
+    "**/android": true,
+    "**/ios": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/package-lock.json": true,
+    "demo/farroups-pay-preview.html": true,
+    "demo/farroups-pay-ao-vivo.html": true
+  },
+  "editor.formatOnSave": false
+}
