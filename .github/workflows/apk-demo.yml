@@ -37,8 +37,25 @@ jobs:
         working-directory: demo/android
         run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Conferir o APK
-        run: ls -lh demo/android/app/build/outputs/apk/debug/
+      - name: Conferir que a vitrine entrou no APK
+        run: |
+          apk=demo/android/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh "$apk"
+          unzip -l "$apk" | grep -E 'assets/index\.html' || {
+            echo "::error::A vitrine não foi empacotada em assets/index.html"
+            exit 1
+          }
+          tamanho=$(unzip -l "$apk" | awk '/assets\/index\.html/ {print $1}')
+          echo "index.html descomprimido: $tamanho bytes"
+          if [ "$tamanho" -lt 50000 ]; then
+            echo "::error::A vitrine entrou truncada ($tamanho bytes)"
+            exit 1
+          fi
+          unzip -p "$apk" assets/index.html | grep -q 'Farroups-pay ao vivo' || {
+            echo "::error::O HTML empacotado não é a vitrine"
+            exit 1
+          }
+          echo "Vitrine confirmada dentro do APK."
 
       - name: Publicar o APK como artefato
         uses: actions/upload-artifact@v4

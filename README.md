@@ -46,6 +46,33 @@ exibido ao lado do aparelho.
 Não é o app de produção: é uma vitrine de um arquivo só, com dados fictícios e sem
 backend. O app de verdade continua sendo o projeto Expo deste repositório.
 
+### A vitrine como APK
+
+`demo/android/` é um app Android mínimo — uma `Activity` com `WebView` carregando a
+vitrine dos assets, sem nenhuma dependência. O Gradle copia
+`demo/farroups-pay-ao-vivo.html` para os assets antes de compilar, então o HTML
+continua sendo a fonte única.
+
+**Baixar pronto**: a cada mudança em `demo/`, o workflow *APK da demonstração*
+compila e publica o arquivo em **Actions → a execução → Artifacts →
+`farroups-pay-demo-apk`**. Baixe o `.zip`, extraia e instale o `.apk` no aparelho.
+Também dá para disparar manualmente em Actions → *APK da demonstração* → *Run
+workflow*.
+
+**Compilar na sua máquina** (precisa do Android SDK):
+
+```bash
+cd demo/android
+gradle assembleDebug        # ou ./gradlew, se você gerar o wrapper
+# APK em app/build/outputs/apk/debug/
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+O APK é assinado com a chave de depuração, então o Android pede para permitir
+"instalar apps de fontes desconhecidas" na primeira vez. É uma demonstração
+offline: só usa rede para buscar as fontes do Google e, sem internet, cai na
+fonte do sistema.
+
 ## Gerar um APK
 
 O projeto usa *Continuous Native Generation*: as pastas `android/` e `ios/` não são
