@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { api, ErroApi } from '@/services';
@@ -15,18 +15,17 @@ import {
   Aviso,
   Botao,
   Cabecalho,
-  CheckAnimado,
   Divisor,
   EstadoErro,
   Esqueleto,
   Icone,
-  MarcaLoja,
   Selo,
   Superficie,
   Tela,
   Texto,
   Valor,
 } from '@/ui';
+import { Desfecho } from '@/features/pagamento/Desfecho';
 import { FolhaAutenticacao } from '@/features/pagamento/FolhaAutenticacao';
 
 type Etapa = 'montar' | 'processando' | 'aprovado' | 'recusado';
@@ -145,53 +144,40 @@ export default function PagarNaLoja() {
 
   if (etapa === 'recusado' && recusa) {
     return (
-      <Tela
-        aoFinal={
-          <View style={{ gap: 10 }}>
-            {recusa.motivo === 'saldo_insuficiente' && (
-              <Botao titulo="Adicionar saldo" icone="mais" onPress={() => router.replace('/recarga')} />
-            )}
-            {recusa.motivo === 'cartao_bloqueado' && (
+      <Desfecho
+          tipo="recusado"
+          titulo="Pagamento recusado"
+          destinatario={loja.nome}
+          valorCentavos={totalCentavos}
+          mensagem={recusa.mensagem}
+          acoes={
+            <View style={{ gap: 10 }}>
+              {recusa.motivo === 'saldo_insuficiente' && (
+                <Botao titulo="Adicionar saldo" icone="mais" onPress={() => router.replace('/recarga')} />
+              )}
+              {recusa.motivo === 'cartao_bloqueado' && (
+                <Botao
+                  titulo="Ir para o cartão"
+                  icone="cartao"
+                  onPress={() => router.replace('/(aluno)/cartao')}
+                />
+              )}
               <Botao
-                titulo="Ir para o cartão"
-                icone="cartao"
-                onPress={() => router.replace('/(aluno)/cartao')}
+                titulo="Tentar de novo"
+                tipo={
+                  recusa.motivo === 'saldo_insuficiente' || recusa.motivo === 'cartao_bloqueado'
+                    ? 'secundario'
+                    : 'primario'
+                }
+                onPress={() => {
+                  setRecusa(null);
+                  setEtapa('montar');
+                }}
               />
-            )}
-            <Botao
-              titulo="Tentar de novo"
-              tipo={recusa.motivo === 'saldo_insuficiente' ? 'secundario' : 'primario'}
-              onPress={() => {
-                setRecusa(null);
-                setEtapa('montar');
-              }}
-            />
-            <Botao titulo="Voltar" tipo="fantasma" onPress={() => router.back()} />
-          </View>
-        }
-      >
-        <Cabecalho titulo="Pagamento recusado" subtitulo={loja.nome} />
-        <View style={{ alignItems: 'center', paddingVertical: 30, gap: 16 }}>
-          <View
-            style={{
-              width: 96,
-              height: 96,
-              borderRadius: 48,
-              backgroundColor: cores.alertaSuave,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Icone nome="x" tamanho={40} cor={cores.alerta} />
-          </View>
-          <Texto variante="titulo" centro>
-            {recusa.mensagem}
-          </Texto>
-          <Texto variante="legenda" suave centro style={{ maxWidth: 300 }}>
-            Nada foi debitado. O recibo desta tentativa fica registrado no extrato.
-          </Texto>
-        </View>
-      </Tela>
+              <Botao titulo="Voltar" tipo="fantasma" onPress={() => router.replace('/(aluno)')} />
+            </View>
+          }
+        />
     );
   }
 
@@ -397,79 +383,30 @@ function Recibo({
   alunoId: string;
   aoFechar: () => void;
 }) {
-  const { cores } = useTema();
   const router = useRouter();
   // Relê o saldo já debitado em vez de calculá-lo na tela.
   const depois = useAsync(() => api.carteira.resumo(alunoId), [alunoId, transacao.id]);
 
   return (
-    <Tela
-      rolagem={false}
-      estilo={{ flex: 1 }}
-      aoFinal={
-        <View style={{ gap: 10 }}>
-          <Botao titulo="Concluir" onPress={aoFechar} />
-          <Botao
-            titulo="Ver comprovante"
-            tipo="fantasma"
-            onPress={() => router.replace(`/transacao/${transacao.id}`)}
-          />
-        </View>
-      }
-    >
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 40 }}>
-        <View style={{ alignItems: 'center', gap: 18 }}>
-          <CheckAnimado cor={cores.sucesso} fundo={cores.sucessoSuave} />
-          <View style={{ alignItems: 'center', gap: 6 }}>
-            <Texto variante="titulo">Pagamento aprovado</Texto>
-            <Texto variante="legenda" suave>
-              {lojaNome} · {formatarHora(transacao.criadaEm)}
-            </Texto>
+    <Desfecho
+        tipo="aprovado"
+        titulo="Pagamento aprovado"
+        destinatario={lojaNome}
+        valorCentavos={transacao.valorCentavos}
+        identificador={transacao.id}
+        quando={transacao.criadaEm}
+        itens={transacao.itens}
+        saldoRestanteCentavos={depois.dados?.conta.saldoCentavos}
+        acoes={
+          <View style={{ gap: 10 }}>
+            <Botao titulo="Concluir" onPress={aoFechar} />
+            <Botao
+              titulo="Ver comprovante"
+              tipo="fantasma"
+              onPress={() => router.replace(`/transacao/${transacao.id}`)}
+            />
           </View>
-          <Valor centavos={transacao.valorCentavos} tamanho={40} sinal="-" />
-          <Superficie preenchimento={16} style={{ width: '100%' }}>
-            <View style={{ gap: 10 }}>
-              {(transacao.itens ?? []).map((i, idx) => (
-                <View key={idx} style={{ flexDirection: 'row' }}>
-                  <Texto variante="corpo" style={{ flex: 1 }}>
-                    {i.nome}
-                  </Texto>
-                  <Texto variante="corpo" tabular suave>
-                    {formatarReais(i.valorCentavos)}
-                  </Texto>
-                </View>
-              ))}
-              {(transacao.itens ?? []).length > 0 && <Divisor />}
-              <View style={{ flexDirection: 'row' }}>
-                <Texto variante="legenda" suave style={{ flex: 1 }}>
-                  Saldo restante
-                </Texto>
-                {depois.carregando || !depois.dados ? (
-                  <Esqueleto altura={16} largura={80} />
-                ) : (
-                  <Texto variante="corpoForte" tabular>
-                    {formatarReais(depois.dados.conta.saldoCentavos)}
-                  </Texto>
-                )}
-              </View>
-              <View style={{ flexDirection: 'row' }}>
-                <Texto variante="legenda" suave style={{ flex: 1 }}>
-                  Identificador
-                </Texto>
-                <Texto variante="legenda" suave>
-                  {transacao.id}
-                </Texto>
-              </View>
-            </View>
-          </Superficie>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MarcaLoja lojaId={transacao.lojaId} tamanho={28} />
-            <Texto variante="legenda" suave>
-              Recibo enviado ao responsável
-            </Texto>
-          </View>
-        </View>
-      </ScrollView>
-    </Tela>
+        }
+      />
   );
 }

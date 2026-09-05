@@ -89,6 +89,7 @@ export interface EstadoMock {
   dispositivos: Dispositivo[];
   cobrancas: import('@/domain/types').Cobranca[];
   auditoria: { id: string; autor: string; acao: string; criadoEm: string }[];
+  solicitacoes: import('@/domain/types').SolicitacaoConta[];
   /** PINs guardados apenas como hash — nunca em texto plano. */
   pins: Record<string, string>;
   senhas: Record<string, string>;
@@ -109,6 +110,7 @@ const ALUNO_HELENA: Aluno = {
   nome: 'Helena Ribeiro Antunes',
   matricula: '2026081',
   turma: '8º ano A',
+  segmento: 'padrao',
   contaId: 'cta_helena',
   responsavelIds: ['usr_camila'],
   maiorDeIdade: false,
@@ -119,9 +121,33 @@ const ALUNO_BENTO: Aluno = {
   nome: 'Bento Ribeiro Antunes',
   matricula: '2026114',
   turma: '5º ano B',
+  segmento: 'infantil',
   contaId: 'cta_bento',
   responsavelIds: ['usr_camila'],
   maiorDeIdade: false,
+};
+
+const ALUNO_ANTONELLA: Aluno = {
+  id: 'alu_antonella',
+  nome: 'Antonella Kaufmann Prado',
+  matricula: '2026207',
+  turma: '1º ano EM',
+  segmento: 'profissional',
+  contaId: 'cta_antonella',
+  responsavelIds: ['usr_camila'],
+  maiorDeIdade: false,
+};
+
+const ALUNO_THEO: Aluno = {
+  id: 'alu_theo',
+  nome: 'Théo Vasconcellos Lima',
+  matricula: '2024118',
+  turma: '3º ano EM',
+  segmento: 'profissional',
+  contaId: 'cta_theo',
+  responsavelIds: ['usr_camila'],
+  // Aos 18 anos ele já responde pela própria conta.
+  maiorDeIdade: true,
 };
 
 export function criarEstadoInicial(agora = new Date()): EstadoMock {
@@ -149,6 +175,30 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
         diarioCentavos: 3000,
         porTransacaoCentavos: 2000,
         lojasBloqueadas: ['bar-do-ze'],
+      },
+      recargaAutomatica: null,
+    },
+    {
+      id: 'cta_antonella',
+      alunoId: 'alu_antonella',
+      saldoCentavos: 0,
+      ativa: true,
+      limites: {
+        diarioCentavos: 8000,
+        porTransacaoCentavos: 5000,
+        lojasBloqueadas: [],
+      },
+      recargaAutomatica: { ativa: false, gatilhoCentavos: 3000, valorCentavos: 8000 },
+    },
+    {
+      id: 'cta_theo',
+      alunoId: 'alu_theo',
+      saldoCentavos: 0,
+      ativa: true,
+      limites: {
+        diarioCentavos: 12000,
+        porTransacaoCentavos: 8000,
+        lojasBloqueadas: [],
       },
       recargaAutomatica: null,
     },
@@ -188,6 +238,39 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       ativo: true,
       criadoEm: dias(agora, -190),
     },
+    {
+      id: 'crt_antonella_v',
+      contaId: 'cta_antonella',
+      tipo: 'virtual',
+      ultimos4: '7318',
+      titular: 'ANTONELLA K PRADO',
+      turma: '1º ano EM',
+      bloqueado: false,
+      ativo: true,
+      criadoEm: dias(agora, -160),
+    },
+    {
+      id: 'crt_theo_f',
+      contaId: 'cta_theo',
+      tipo: 'fisico',
+      ultimos4: '9045',
+      titular: 'THEO V LIMA',
+      turma: '3º ano EM',
+      bloqueado: false,
+      ativo: true,
+      criadoEm: dias(agora, -420),
+    },
+    {
+      id: 'crt_theo_v',
+      contaId: 'cta_theo',
+      tipo: 'virtual',
+      ultimos4: '6612',
+      titular: 'THEO V LIMA',
+      turma: '3º ano EM',
+      bloqueado: false,
+      ativo: false,
+      criadoEm: dias(agora, -418),
+    },
   ];
 
   const usuarios: Usuario[] = [
@@ -197,6 +280,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       email: 'helena@farroupilha.br',
       perfil: 'aluno',
       alunoId: 'alu_helena',
+      segmento: 'padrao',
       temPin: false,
       biometriaAtiva: false,
       notificacoes: { modo: 'toda_compra', acimaDeCentavos: 0, recargas: true },
@@ -206,10 +290,43 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
       nome: 'Camila Ribeiro Antunes',
       email: 'camila@farroupilha.br',
       perfil: 'responsavel',
-      alunosIds: ['alu_helena', 'alu_bento'],
+      alunosIds: ['alu_helena', 'alu_bento', 'alu_antonella', 'alu_theo'],
       temPin: false,
       biometriaAtiva: false,
       notificacoes: { modo: 'acima_de', acimaDeCentavos: 2000, recargas: true },
+    },
+    {
+      id: 'usr_bento',
+      nome: 'Bento Ribeiro Antunes',
+      email: 'bento@farroupilha.br',
+      perfil: 'aluno',
+      alunoId: 'alu_bento',
+      segmento: 'infantil',
+      temPin: false,
+      biometriaAtiva: false,
+      notificacoes: { modo: 'toda_compra', acimaDeCentavos: 0, recargas: true },
+    },
+    {
+      id: 'usr_antonella',
+      nome: 'Antonella Kaufmann Prado',
+      email: 'antonella@farroupilha.br',
+      perfil: 'aluno',
+      alunoId: 'alu_antonella',
+      segmento: 'profissional',
+      temPin: false,
+      biometriaAtiva: false,
+      notificacoes: { modo: 'acima_de', acimaDeCentavos: 3000, recargas: true },
+    },
+    {
+      id: 'usr_theo',
+      nome: 'Théo Vasconcellos Lima',
+      email: 'theo@farroupilha.br',
+      perfil: 'aluno',
+      alunoId: 'alu_theo',
+      segmento: 'profissional',
+      temPin: false,
+      biometriaAtiva: false,
+      notificacoes: { modo: 'resumo_diario', acimaDeCentavos: 0, recargas: false },
     },
     {
       id: 'usr_ze',
@@ -244,7 +361,7 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
 
   const estado: EstadoMock = {
     usuarios,
-    alunos: [ALUNO_HELENA, ALUNO_BENTO],
+    alunos: [ALUNO_HELENA, ALUNO_BENTO, ALUNO_ANTONELLA, ALUNO_THEO],
     contas,
     cartoes,
     transacoes: [],
@@ -269,6 +386,44 @@ export function criarEstadoInicial(agora = new Date()): EstadoMock {
         criadoEm: dias(agora, -21),
       },
     ],
+    solicitacoes: [
+      {
+        id: 'SOL-4827',
+        criadaEm: dias(agora, -1),
+        status: 'pendente',
+        responsavel: {
+          nome: 'Rodrigo Menezes Ferraz',
+          cpf: '028.114.760-33',
+          email: 'rodrigo.ferraz@email.com',
+          telefone: '(51) 99184-2207',
+        },
+        aluno: {
+          nome: 'Cecília Menezes Ferraz',
+          matricula: '2026318',
+          turma: '2º ano A',
+          segmento: 'infantil',
+        },
+        consentimentoLgpd: true,
+      },
+      {
+        id: 'SOL-4831',
+        criadaEm: dias(agora, 0),
+        status: 'pendente',
+        responsavel: {
+          nome: 'Patrícia Goulart Nunes',
+          cpf: '911.472.030-08',
+          email: 'patricia.goulart@email.com',
+          telefone: '(51) 98822-4410',
+        },
+        aluno: {
+          nome: 'Enzo Goulart Nunes',
+          matricula: '2025092',
+          turma: '2º ano EM',
+          segmento: 'profissional',
+        },
+        consentimentoLgpd: true,
+      },
+    ],
     pins: {},
     senhas: Object.fromEntries(usuarios.map((u) => [u.id, hash('farroupilha')])),
     idempotencia: {},
@@ -285,6 +440,8 @@ function semearHistorico(estado: EstadoMock, agora: Date, aleatorio: () => numbe
   const agenda: Record<string, Record<number, number>> = {
     cta_helena: { 42: 10000, 28: 10000, 13: 10000, 4: 10000 },
     cta_bento: { 40: 6000, 15: 6000 },
+    cta_antonella: { 38: 15000, 20: 12000, 6: 12000 },
+    cta_theo: { 35: 20000, 14: 15000, 3: 15000 },
   };
 
   for (let d = 44; d >= 0; d--) {
@@ -323,7 +480,10 @@ function semearHistorico(estado: EstadoMock, agora: Date, aleatorio: () => numbe
 
   // Fecha a semeadura com uma recarga recente: a demonstração começa com saldo.
   for (const conta of contas) {
-    const alvo = conta.id === 'cta_helena' ? 8700 : 4200;
+    const alvo =
+      { cta_helena: 8700, cta_bento: 4200, cta_antonella: 11400, cta_theo: 16850 }[
+        conta.id
+      ] ?? 5000;
     if (conta.saldoCentavos < alvo) {
       creditar(estado, conta, alvo - conta.saldoCentavos, dias(agora, -1), 'pix');
     }
@@ -396,4 +556,6 @@ function dias(base: Date, delta: number): string {
 export const CODIGOS_VINCULO: Record<string, string> = {
   '8ANO-HELENA': 'alu_helena',
   '5ANO-BENTO': 'alu_bento',
+  '1EM-ANTONELLA': 'alu_antonella',
+  '3EM-THEO': 'alu_theo',
 };

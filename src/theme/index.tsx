@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { claro, escuro, type Paleta } from './tokens';
+import { PALETAS, type Paleta, type Segmento } from './tokens';
 
 export * from './tokens';
 
@@ -10,6 +10,8 @@ export type PreferenciaTema = 'sistema' | 'claro' | 'escuro';
 interface ContextoTema {
   cores: Paleta;
   escura: boolean;
+  /** Faixa etária que veste o app: muda a paleta inteira. */
+  segmento: Segmento;
   preferencia: PreferenciaTema;
   definirPreferencia: (p: PreferenciaTema) => void;
   /** Fontes carregadas? Enquanto não, usamos a família do sistema. */
@@ -22,9 +24,11 @@ const CHAVE = 'farroupspay:tema';
 export function ProvedorTema({
   children,
   fontesProntas,
+  segmento = 'padrao',
 }: {
   children: React.ReactNode;
   fontesProntas: boolean;
+  segmento?: Segmento;
 }) {
   const esquema = useColorScheme();
   const [preferencia, setPreferencia] = useState<PreferenciaTema>('sistema');
@@ -42,7 +46,8 @@ export function ProvedorTema({
       preferencia === 'sistema' ? esquema === 'dark' : preferencia === 'escuro';
     return {
       escura,
-      cores: escura ? escuro : claro,
+      segmento,
+      cores: PALETAS[segmento][escura ? 'escuro' : 'claro'],
       preferencia,
       definirPreferencia: (p) => {
         setPreferencia(p);
@@ -61,7 +66,7 @@ export function ProvedorTema({
         return { fontFamily: familia };
       },
     };
-  }, [preferencia, esquema, fontesProntas]);
+  }, [preferencia, esquema, fontesProntas, segmento]);
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }

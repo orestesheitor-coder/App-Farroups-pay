@@ -16,13 +16,39 @@ import {
   Texto,
   useAlerta,
 } from '@/ui';
-import { MarcaFarroups } from '@/features/comum/MarcaFarroups';
+import { MarcaFarroups, SeloFarroupilha } from '@/features/comum/MarcaFarroups';
 
-const DEMO = [
-  { rotulo: 'Aluna', login: 'helena@farroupilha.br', descricao: 'Helena · 8º ano A' },
-  { rotulo: 'Responsável', login: 'camila@farroupilha.br', descricao: 'Camila · 2 alunos' },
+const ALUNOS = [
+  {
+    rotulo: 'Bento',
+    login: 'bento@farroupilha.br',
+    descricao: '5º ano B · anos iniciais',
+    faixa: 'Infantil',
+  },
+  {
+    rotulo: 'Helena',
+    login: 'helena@farroupilha.br',
+    descricao: '8º ano A · anos finais',
+    faixa: 'Padrão',
+  },
+  {
+    rotulo: 'Antonella',
+    login: 'antonella@farroupilha.br',
+    descricao: '1º ano EM · Ensino Médio',
+    faixa: 'Profissional',
+  },
+  {
+    rotulo: 'Théo',
+    login: 'theo@farroupilha.br',
+    descricao: '3º ano EM · Ensino Médio',
+    faixa: 'Profissional',
+  },
+];
+
+const EQUIPE = [
+  { rotulo: 'Responsável', login: 'camila@farroupilha.br', descricao: 'Camila · 4 alunos' },
   { rotulo: 'Lojista', login: 'ze@barodoze.com.br', descricao: 'Bar do Zé' },
-  { rotulo: 'Colégio', login: 'secretaria@farroupilha.br', descricao: 'Painel administrativo' },
+  { rotulo: 'Colégio', login: 'secretaria@farroupilha.br', descricao: 'Secretaria · pedidos de conta' },
 ];
 
 export default function Login() {
@@ -120,45 +146,57 @@ export default function Login() {
               onPress={() => void acessarComBiometria()}
             />
           )}
+          <Botao
+            titulo="Não tenho conta ainda"
+            tipo="fantasma"
+            icone="mais"
+            onPress={() => router.push('/(auth)/solicitar')}
+          />
         </View>
 
-        <View style={{ marginVertical: 26, gap: 14 }}>
+        <View style={{ marginVertical: 24, gap: 16 }}>
           <Divisor />
-          <Texto variante="legenda" peso="600" suave>
-            Acessos de demonstração · senha farroupilha
-          </Texto>
+          <View style={{ gap: 10 }}>
+            <Texto variante="legenda" peso="600" suave>
+              Contas de demonstração · senha farroupilha
+            </Texto>
+            <Texto variante="legenda" suave>
+              Cada faixa etária veste o app de um jeito. Entre com um aluno de cada
+              para ver a diferença.
+            </Texto>
+          </View>
+
           <View style={{ gap: 8 }}>
-            {DEMO.map((d) => (
-              <Pressable
+            {ALUNOS.map((d) => (
+              <CartaoAcesso
                 key={d.login}
-                accessibilityRole="button"
-                accessibilityLabel={`Entrar como ${d.rotulo}`}
-                onPress={() => {
+                rotulo={d.rotulo}
+                descricao={d.descricao}
+                faixa={d.faixa}
+                aoEntrar={() => {
                   setLogin(d.login);
                   setSenha('farroupilha');
                   void acessar(d.login, 'farroupilha');
                 }}
-                style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  minHeight: 56,
-                  paddingHorizontal: 14,
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: cores.borda,
-                  backgroundColor: pressed ? cores.superficieToque : cores.superficie,
-                })}
-              >
-                <View style={{ flex: 1, gap: 3 }}>
-                  <Texto variante="corpoForte">{d.rotulo}</Texto>
-                  <Texto variante="legenda" suave>
-                    {d.descricao}
-                  </Texto>
-                </View>
-                <Selo texto="Entrar" tom="marca" />
-                <Icone nome="setaDireita" tamanho={16} cor={cores.textoSuave} />
-              </Pressable>
+              />
+            ))}
+          </View>
+
+          <Texto variante="legenda" peso="600" suave>
+            Equipe
+          </Texto>
+          <View style={{ gap: 8 }}>
+            {EQUIPE.map((d) => (
+              <CartaoAcesso
+                key={d.login}
+                rotulo={d.rotulo}
+                descricao={d.descricao}
+                aoEntrar={() => {
+                  setLogin(d.login);
+                  setSenha('farroupilha');
+                  void acessar(d.login, 'farroupilha');
+                }}
+              />
             ))}
           </View>
         </View>
@@ -169,5 +207,48 @@ export default function Login() {
         />
       </Tela>
     </KeyboardAvoidingView>
+  );
+}
+
+/** Atalho de acesso da demonstração, com a faixa etária que ele veste. */
+function CartaoAcesso({
+  rotulo,
+  descricao,
+  faixa,
+  aoEntrar,
+}: {
+  rotulo: string;
+  descricao: string;
+  faixa?: string;
+  aoEntrar: () => void;
+}) {
+  const { cores } = useTema();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Entrar como ${rotulo}`}
+      onPress={aoEntrar}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        minHeight: 60,
+        paddingHorizontal: 14,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: cores.borda,
+        backgroundColor: pressed ? cores.superficieToque : cores.superficie,
+      })}
+    >
+      <SeloFarroupilha tamanho={26} cor={cores.marca} opacidade={0.85} />
+      <View style={{ flex: 1, gap: 3 }}>
+        <Texto variante="corpoForte">{rotulo}</Texto>
+        <Texto variante="legenda" suave>
+          {descricao}
+        </Texto>
+      </View>
+      {faixa && <Selo texto={faixa} tom="marca" />}
+      <Icone nome="setaDireita" tamanho={16} cor={cores.textoSuave} />
+    </Pressable>
   );
 }

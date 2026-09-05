@@ -11,7 +11,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/sora';
 import { ProvedorTema, useTema } from '@/theme';
-import { ProvedorSessao } from '@/state/sessao';
+import { ProvedorSessao, useSessao } from '@/state/sessao';
 import { ProvedorAlerta } from '@/ui';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -32,14 +32,33 @@ export default function LayoutRaiz() {
 
   return (
     <SafeAreaProvider>
-      <ProvedorTema fontesProntas={!!fontesProntas}>
-        <ProvedorSessao>
+      <ProvedorSessao>
+        <TemaDaSessao fontesProntas={!!fontesProntas}>
           <ProvedorAlerta>
             <Navegacao />
           </ProvedorAlerta>
-        </ProvedorSessao>
-      </ProvedorTema>
+        </TemaDaSessao>
+      </ProvedorSessao>
     </SafeAreaProvider>
+  );
+}
+
+/**
+ * O app se veste conforme quem entrou: infantil, padrão ou profissional.
+ * Perfis adultos — responsável, lojista, secretaria — ficam sempre no padrão.
+ */
+function TemaDaSessao({
+  children,
+  fontesProntas,
+}: {
+  children: React.ReactNode;
+  fontesProntas: boolean;
+}) {
+  const { usuario } = useSessao();
+  return (
+    <ProvedorTema fontesProntas={fontesProntas} segmento={usuario?.segmento ?? 'padrao'}>
+      {children}
+    </ProvedorTema>
   );
 }
 

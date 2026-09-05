@@ -14,6 +14,7 @@ import {
 } from '@/domain/regras';
 import type {
   Cartao,
+  SolicitacaoConta,
   Cobranca,
   Conta,
   Loja,
@@ -959,6 +960,190 @@ export const mockApi: Api = {
       await atraso(300);
       const estado = await db();
       return estado.auditoria;
+    },
+  },
+
+  solicitacoes: {
+    async criar(dados) {
+      await atraso(700);
+      const estado = await db();
+
+      const matricula = dados.aluno.matricula.trim();
+      if (estado.alunos.some((a) => a.matricula === matricula)) {
+        throw new ErroApi(
+          'Já existe uma conta para esta matrícula. Procure a secretaria.',
+          'matricula_em_uso',
+        );
+      }
+      const pendente = estado.solicitacoes.find(
+        (x) => x.aluno.matricula === matricula && x.status === 'pendente',
+      );
+      if (pendente) {
+        throw new ErroApi(
+          `Já há um pedido em análise para esta matrícula (protocolo ${pendente.id}).`,
+          'solicitacao_duplicada',
+        );
+      }
+      if (!dados.consentimentoLgpd) {
+        throw new ErroApi(
+          'É preciso autorizar o uso dos dados do estudante para abrir a conta.',
+          'consentimento_ausente',
+        );
+      }
+
+      const solicitacao: SolicitacaoConta = {
+        id: `SOL-${codigoNumerico(4)}`,
+        criadaEm: new Date().toISOString(),
+        status: 'pendente',
+        responsavel: { ...dados.responsavel, email: dados.responsavel.email.trim().toLowerCase() },
+        aluno: { ...dados.aluno, matricula },
+        consentimentoLgpd: true,
+      };
+      estado.solicitacoes.unshift(solicitacao);
+      estado.auditoria.unshift({
+        id: id('aud'),
+        autor: solicitacao.responsavel.nome,
+        acao: `Solicitação de conta ${solicitacao.id} recebida para ${solicitacao.aluno.nome}`,
+        criadoEm: solicitacao.criadaEm,
+      });
+      await persistir();
+      return solicitacao;
+    },
+
+    async consultar(protocolo) {
+      await atraso(400);
+      const estado = await db();
+      const alvo = protocolo.trim().toUpperCase();
+      return estado.solicitacoes.find((s) => s.id.toUpperCase() === alvo) ?? null;
+    },
+
+    async listar(status) {
+      await atraso(360);
+      const estado = await db();
+      const lista = status
+        ? estado.solicitacoes.filter((s) => s.status === status)
+        : estado.solicitacoes;
+      return [...lista].sort((a, b) => b.criadaEm.localeCompare(a.criadaEm));
+    },
+
+    async aprovar(solicitacaoId, avaliadorId) {
+      await atraso(900);
+      const estado = await db();
+      const s = estado.solicitacoes.find((x) => x.id === solicitacaoId);
+      if (!s) throw new ErroApi('Solicitação não encontrada.', 'nao_encontrado');
+      if (s.status !== 'pendente') {
+        throw new ErroApi('Esta solicitação já foi avaliada.', 'ja_avaliada');
+      }
+
+      const avaliador = estado.usuarios.find((u) => u.id === avaliadorId);
+      const agora = new Date().toISOString();
+
+      // 1. O aluno e sua conta nascem juntos, com os limites do segmento.
+      const alunoId = id('alu');
+      const contaId = id('cta');
+      const limitesPorSegmento = {
+        infantil: { diarioCentavos: 3000, porTransacaoCentavos: 2000 },
+        padrao: { diarioCentavos: 5000, porTransacaoCentavos: 3000 },
+        profissional: { diarioCentavos: 8000, porTransacaoCentavos: 5000 },
+      }[s.aluno.segmento];
+
+      // 2. O responsável: reaproveita o acesso se ele já tiver um.
+      let responsavel = estado.usuarios.find(
+        (u) => u.email.toLowerCase() === s.responsavel.email.toLowerCase(),
+      );
+      let senhaProvisoria: string | undefined;
+      if (!responsavel) {
+        senhaProvisoria = `FP${codigoNumerico(6)}`;
+        responsavel = {
+          id: id('usr'),
+          nome: s.responsavel.nome,
+          email: s.responsavel.email,
+          perfil: 'responsavel',
+          alunosIds: [],
+          temPin: false,
+          biometriaAtiva: false,
+          notificacoes: { modo: 'toda_compra', acimaDeCentavos: 0, recargas: true },
+        };
+        estado.usuarios.push(responsavel);
+        estado.senhas[responsavel.id] = hash(senhaProvisoria);
+      }
+
+      estado.alunos.push({
+        id: alunoId,
+        nome: s.aluno.nome,
+        matricula: s.aluno.matricula,
+        turma: s.aluno.turma,
+        segmento: s.aluno.segmento,
+        contaId,
+        responsavelIds: [responsavel.id],
+        maiorDeIdade: false,
+      });
+      estado.contas.push({
+        id: contaId,
+        alunoId,
+        saldoCentavos: 0,
+        ativa: true,
+        limites: { ...limitesPorSegmento, lojasBloqueadas: [] },
+        recargaAutomatica: null,
+      });
+      estado.cartoes.push({
+        id: id('crt'),
+        contaId,
+        tipo: 'virtual',
+        ultimos4: codigoNumerico(4),
+        titular: s.aluno.nome.toUpperCase(),
+        turma: s.aluno.turma,
+        bloqueado: false,
+        ativo: true,
+        criadoEm: agora,
+      });
+      responsavel.alunosIds = Array.from(new Set([...(responsavel.alunosIds ?? []), alunoId]));
+
+      // 3. O código de vínculo permite ao responsável somar o aluno a um
+      //    acesso que ele já use no app.
+      const codigo = `${s.aluno.turma.replace(/[^0-9A-Za-zÀ-ú]/g, '').toUpperCase().slice(0, 6)}-${codigoNumerico(4)}`;
+      CODIGOS_VINCULO[codigo] = alunoId;
+
+      s.status = 'aprovada';
+      s.avaliadaEm = agora;
+      s.avaliadaPor = avaliador?.nome ?? 'Secretaria';
+      s.codigoVinculo = codigo;
+      s.senhaProvisoria = senhaProvisoria;
+
+      estado.auditoria.unshift({
+        id: id('aud'),
+        autor: avaliador?.nome ?? 'Secretaria',
+        acao: `Solicitação ${s.id} aprovada: conta criada para ${s.aluno.nome} (${s.aluno.turma})`,
+        criadoEm: agora,
+      });
+      await persistir();
+      return s;
+    },
+
+    async recusar(solicitacaoId, avaliadorId, motivo) {
+      await atraso(600);
+      const estado = await db();
+      const s = estado.solicitacoes.find((x) => x.id === solicitacaoId);
+      if (!s) throw new ErroApi('Solicitação não encontrada.', 'nao_encontrado');
+      if (s.status !== 'pendente') {
+        throw new ErroApi('Esta solicitação já foi avaliada.', 'ja_avaliada');
+      }
+      if (motivo.trim().length < 5) {
+        throw new ErroApi('Descreva o motivo da recusa.', 'motivo_curto');
+      }
+      const avaliador = estado.usuarios.find((u) => u.id === avaliadorId);
+      s.status = 'recusada';
+      s.avaliadaEm = new Date().toISOString();
+      s.avaliadaPor = avaliador?.nome ?? 'Secretaria';
+      s.motivoRecusa = motivo.trim();
+      estado.auditoria.unshift({
+        id: id('aud'),
+        autor: avaliador?.nome ?? 'Secretaria',
+        acao: `Solicitação ${s.id} recusada: ${s.motivoRecusa}`,
+        criadoEm: s.avaliadaEm,
+      });
+      await persistir();
+      return s;
     },
   },
 

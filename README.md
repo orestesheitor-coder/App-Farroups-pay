@@ -126,12 +126,46 @@ Senha de todas: `farroupilha`. A tela de login tem atalhos para cada uma.
 | Aluna | `helena@farroupilha.br` (matrícula `2026081`) | Carteira, cartão, pagamento nas lojas, extrato |
 | Responsável | `camila@farroupilha.br` | Dois alunos, limites, bloqueio de loja, recargas |
 | Lojista | `ze@barodoze.com.br` | Cobrança, fila do dia, estorno, fechamento de caixa |
-| Colégio | `secretaria@farroupilha.br` | Métricas, conciliação, cadastros e auditoria |
+| Colégio | `secretaria@farroupilha.br` | Fila de pedidos de conta, métricas, conciliação e auditoria |
 
 No primeiro acesso de aluno e responsável o app pede a criação do PIN (4 ou 6
 dígitos). Códigos de vínculo de aluno: `8ANO-HELENA` e `5ANO-BENTO`.
 
 Em **Perfil → Recomeçar demonstração** a base volta ao estado inicial.
+
+## Identidade por faixa etária
+
+A marca do colégio é azul e branca; o vermelho entra como acento. Sobre essa
+base, o app se veste conforme a idade de quem entrou — a paleta inteira troca,
+não só um detalhe:
+
+| Faixa | Turmas | Paleta |
+| --- | --- | --- |
+| Infantil | até o 5º ano | Branco e azul bebê, com nuvens, estrelas e folhas no fundo |
+| Padrão | 6º ao 9º ano | Azul institucional, branco e vermelho |
+| Profissional | Ensino Médio | Preto, cinza e branco, com azul-aço discreto |
+
+O segmento é um dado do aluno (`Aluno.segmento`), derivável da turma por
+`segmentoDaTurma`. Perfis adultos — responsável, lojista e secretaria — usam
+sempre a paleta padrão. A marca do colégio acompanha o uso: fixa no cartão e
+discreta no canto de cada tela.
+
+## Abertura de conta
+
+Ninguém se cadastra sozinho numa carteira fechada de escola. O fluxo tem dois
+lados:
+
+1. **O responsável solicita** — formulário público em *Solicitar conta*, com os
+   dados dele, os do estudante e o consentimento LGPD. Sai um número de
+   protocolo; nada é criado ainda.
+2. **A secretaria aprova** — em *Painel → Pedidos*, confere a matrícula contra o
+   sistema acadêmico e aprova. A aprovação cria de uma vez o aluno, a conta, o
+   cartão virtual e o acesso do responsável, devolvendo o código de vínculo e
+   uma senha provisória para entregar. Recusar exige motivo. Tudo entra na
+   auditoria.
+
+Os limites da conta nova saem do segmento: R$ 30/dia no infantil, R$ 50 no
+padrão, R$ 80 no Ensino Médio.
 
 ## Parâmetros de negócio
 

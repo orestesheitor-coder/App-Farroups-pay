@@ -2,6 +2,12 @@
 
 export type Perfil = 'aluno' | 'responsavel' | 'lojista' | 'admin';
 
+/**
+ * Faixa escolar do aluno. Além de organizar os relatórios, define como o app
+ * se veste: infantil até o 5º ano, padrão do 6º ao 9º, profissional no Médio.
+ */
+export type Segmento = 'infantil' | 'padrao' | 'profissional';
+
 export type LojaId = 'bar-do-ze' | 'la-brunita' | 'saude-no-copo';
 
 export interface Loja {
@@ -28,6 +34,7 @@ export interface Aluno {
   nome: string;
   matricula: string;
   turma: string;
+  segmento: Segmento;
   contaId: string;
   responsavelIds: string[];
   /** Aluno maior de idade pode ser o próprio responsável financeiro. */
@@ -150,6 +157,8 @@ export interface Usuario {
   alunoId?: string;
   alunosIds?: string[];
   lojaId?: LojaId;
+  /** Só para o perfil aluno: veste o app conforme a idade. */
+  segmento?: Segmento;
   temPin: boolean;
   biometriaAtiva: boolean;
   notificacoes: PreferenciasNotificacao;
@@ -171,6 +180,39 @@ export interface Notificacao {
   criadaEm: string;
   lida: boolean;
   transacaoId?: string;
+}
+
+export type StatusSolicitacao = 'pendente' | 'aprovada' | 'recusada';
+
+/**
+ * Pedido de abertura de conta. O responsável preenche e envia; a secretaria
+ * confere contra a matrícula e aprova. Só a aprovação cria contas — ninguém
+ * se cadastra sozinho numa carteira fechada de escola.
+ */
+export interface SolicitacaoConta {
+  id: string;
+  criadaEm: string;
+  status: StatusSolicitacao;
+  responsavel: {
+    nome: string;
+    cpf: string;
+    email: string;
+    telefone: string;
+  };
+  aluno: {
+    nome: string;
+    matricula: string;
+    turma: string;
+    segmento: Segmento;
+  };
+  /** O responsável precisa autorizar o uso dos dados do menor (LGPD). */
+  consentimentoLgpd: boolean;
+  avaliadaEm?: string;
+  avaliadaPor?: string;
+  motivoRecusa?: string;
+  /** Preenchidos na aprovação, para a secretaria entregar ao responsável. */
+  codigoVinculo?: string;
+  senhaProvisoria?: string;
 }
 
 export interface Sessao {

@@ -7,6 +7,7 @@ import { useSessao } from '@/state/sessao';
 import { useAsync } from '@/lib/hooks';
 import { formatarReais, iniciais, primeiroNome } from '@/lib/format';
 import { LOJAS } from '@/services/mock/seed';
+import { AssinaturaCanto } from '@/features/comum/MarcaFarroups';
 import { raio, useTema } from '@/theme';
 import {
   Botao,
@@ -38,8 +39,9 @@ export default function PainelResponsavel() {
   const total = alunos.reduce((s, a) => s + a.conta.saldoCentavos, 0);
 
   return (
+    <View style={{ flex: 1, backgroundColor: cores.fundo }}>
     <ScrollView
-      style={{ flex: 1, backgroundColor: cores.fundo }}
+      style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: 32, paddingTop: insets.top + 8 }}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -214,5 +216,7 @@ export default function PainelResponsavel() {
         )}
       </View>
     </ScrollView>
+      <AssinaturaCanto />
+    </View>
   );
 }

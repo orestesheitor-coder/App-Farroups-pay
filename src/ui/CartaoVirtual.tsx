@@ -3,6 +3,7 @@ import { Animated, Easing, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { raio, sombraCartao, useTema } from '@/theme';
 import type { Cartao } from '@/domain/types';
+import { SeloFarroupilha } from '@/features/comum/MarcaFarroups';
 import { Icone } from './Icones';
 import { Texto } from './Texto';
 
@@ -91,9 +92,14 @@ export function CartaoVirtual({
             top: -110,
           }}
         />
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <View style={{ gap: 2 }}>
-            <Texto variante="micro" cor="rgba(255,255,255,0.75)">
+        <View style={{ position: 'absolute', right: -14, bottom: -18, opacity: 0.14 }}>
+          <SeloFarroupilha tamanho={148} cor="#FFFFFF" />
+        </View>
+        {/* A marca do colégio fica fixa no cartão, como num cartão emitido por banco. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <SeloFarroupilha tamanho={30} cor="#FFFFFF" />
+          <View style={{ gap: 1, flex: 1 }}>
+            <Texto variante="micro" cor="rgba(255,255,255,0.78)">
               FARROUPS-PAY
             </Texto>
             <Texto variante="corpoForte" cor="#FFFFFF">

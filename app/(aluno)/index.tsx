@@ -23,12 +23,14 @@ import {
   Icone,
 } from '@/ui';
 import { FaixaLojas } from '@/features/carteira/FaixaLojas';
+import { AssinaturaCanto } from '@/features/comum/MarcaFarroups';
+import { FundoInfantil } from '@/ui/Tela';
 import { LinhaTransacao } from '@/features/carteira/LinhaTransacao';
 import { CartaoVirtual } from '@/ui/CartaoVirtual';
 
 export default function Carteira() {
   const { usuario, alunoAtivoId, versao } = useSessao();
-  const { cores } = useTema();
+  const { cores, segmento } = useTema();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [oculto, setOculto] = useState(false);
@@ -49,8 +51,10 @@ export default function Carteira() {
   const saudacao = new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite';
 
   return (
+    <View style={{ flex: 1, backgroundColor: cores.fundo }}>
+      {segmento === 'infantil' && <FundoInfantil />}
     <ScrollView
-      style={{ flex: 1, backgroundColor: cores.fundo }}
+      style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: 32, paddingTop: insets.top + 8 }}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -240,5 +244,7 @@ export default function Carteira() {
         )}
       </View>
     </ScrollView>
+      <AssinaturaCanto />
+    </View>
   );
 }

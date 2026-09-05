@@ -5,11 +5,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/services';
 import { useSessao } from '@/state/sessao';
 import { useAsync } from '@/lib/hooks';
+import type { SolicitacaoConta } from '@/domain/types';
 import { formatarData, formatarDataHora, formatarReais } from '@/lib/format';
 import { raio, useTema } from '@/theme';
 import {
+  Aviso,
   Botao,
+  Campo,
   Divisor,
+  EstadoVazio,
+  Folha,
   EstadoErro,
   Esqueleto,
   EsqueletoLista,
@@ -21,18 +26,65 @@ import {
   Tela,
   Texto,
   Valor,
+  useAlerta,
 } from '@/ui';
 
-type Secao = 'visao' | 'cadastros' | 'auditoria';
+type Secao = 'visao' | 'pedidos' | 'cadastros' | 'auditoria';
 
 export default function PainelAdministrativo() {
   const { usuario, sair, versao } = useSessao();
+  const { avisar } = useAlerta();
   const { cores } = useTema();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [secao, setSecao] = useState<Secao>('visao');
 
   const metricas = useAsync(() => api.admin.metricas(), [versao], { recarregarAoFocar: true });
+  const solicitacoes = useAsync(() => api.solicitacoes.listar(), [versao], {
+    recarregarAoFocar: true,
+  });
+  const pendentes = (solicitacoes.dados ?? []).filter((s) => s.status === 'pendente').length;
+
+  const [alvo, setAlvo] = useState<SolicitacaoConta | null>(null);
+  const [recusando, setRecusando] = useState<SolicitacaoConta | null>(null);
+  const [motivo, setMotivo] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+  const [aprovada, setAprovada] = useState<SolicitacaoConta | null>(null);
+
+  async function aprovar(s: SolicitacaoConta) {
+    if (!usuario) return;
+    setOcupado(true);
+    try {
+      const r = await api.solicitacoes.aprovar(s.id, usuario.id);
+      setAlvo(null);
+      setAprovada(r);
+      solicitacoes.recarregar();
+      alunos.recarregar();
+      auditoria.recarregar();
+      avisar(`Conta de ${r.aluno.nome.split(' ')[0]} criada.`, 'sucesso');
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não foi possível aprovar.', 'erro');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function recusar() {
+    if (!usuario || !recusando) return;
+    setOcupado(true);
+    try {
+      await api.solicitacoes.recusar(recusando.id, usuario.id, motivo);
+      setRecusando(null);
+      setMotivo('');
+      solicitacoes.recarregar();
+      auditoria.recarregar();
+      avisar('Pedido recusado. O responsável será avisado.', 'neutro');
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : 'Não foi possível recusar.', 'erro');
+    } finally {
+      setOcupado(false);
+    }
+  }
   const alunos = useAsync(() => api.admin.alunos(), [versao]);
   const lojas = useAsync(() => api.admin.lojas(), []);
   const operadores = useAsync(() => api.admin.operadores(), []);
@@ -68,7 +120,8 @@ export default function PainelAdministrativo() {
           valor={secao}
           aoMudar={setSecao}
           opcoes={[
-            { valor: 'visao', rotulo: 'Visão geral' },
+            { valor: 'visao', rotulo: 'Visão' },
+            { valor: 'pedidos', rotulo: `Pedidos${pendentes ? ` (${pendentes})` : ''}` },
             { valor: 'cadastros', rotulo: 'Cadastros' },
             { valor: 'auditoria', rotulo: 'Auditoria' },
           ]}
@@ -204,6 +257,87 @@ export default function PainelAdministrativo() {
           </View>
         ))}
 
+      {secao === 'pedidos' &&
+        (solicitacoes.erro ? (
+          <EstadoErro mensagem={solicitacoes.erro} aoTentarNovamente={solicitacoes.recarregar} />
+        ) : solicitacoes.carregando ? (
+          <EsqueletoLista linhas={3} />
+        ) : (solicitacoes.dados ?? []).length === 0 ? (
+          <EstadoVazio
+            icone="usuarios"
+            titulo="Nenhum pedido"
+            descricao="As solicitações enviadas pelos responsáveis aparecem aqui para conferência."
+          />
+        ) : (
+          <View style={{ gap: 14 }}>
+            {(solicitacoes.dados ?? []).map((s) => (
+              <Superficie key={s.id} preenchimento={16}>
+                <View style={{ gap: 14 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                    <View style={{ flex: 1, gap: 3 }}>
+                      <Texto variante="corpoForte">{s.aluno.nome}</Texto>
+                      <Texto variante="legenda" suave>
+                        {s.aluno.turma} · matrícula {s.aluno.matricula}
+                      </Texto>
+                    </View>
+                    <Selo
+                      texto={
+                        s.status === 'pendente'
+                          ? 'Em análise'
+                          : s.status === 'aprovada'
+                            ? 'Aprovada'
+                            : 'Recusada'
+                      }
+                      tom={
+                        s.status === 'pendente'
+                          ? 'marca'
+                          : s.status === 'aprovada'
+                            ? 'sucesso'
+                            : 'alerta'
+                      }
+                    />
+                  </View>
+
+                  <View style={{ gap: 6 }}>
+                    <ItemPedido rotulo="Responsável" valor={s.responsavel.nome} />
+                    <ItemPedido rotulo="CPF" valor={s.responsavel.cpf} />
+                    <ItemPedido rotulo="Contato" valor={s.responsavel.email} />
+                    <ItemPedido rotulo="Telefone" valor={s.responsavel.telefone} />
+                    <ItemPedido rotulo="Protocolo" valor={s.id} />
+                    <ItemPedido rotulo="Recebido em" valor={formatarDataHora(s.criadaEm)} />
+                  </View>
+
+                  {s.status === 'pendente' ? (
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <View style={{ flex: 1 }}>
+                        <Botao titulo="Aprovar" compacto onPress={() => setAlvo(s)} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Botao
+                          titulo="Recusar"
+                          tipo="perigo"
+                          compacto
+                          onPress={() => setRecusando(s)}
+                        />
+                      </View>
+                    </View>
+                  ) : (
+                    <Texto variante="legenda" suave>
+                      {s.status === 'aprovada'
+                        ? `Aprovada por ${s.avaliadaPor} em ${formatarDataHora(s.avaliadaEm ?? s.criadaEm)}`
+                        : `Recusada: ${s.motivoRecusa}`}
+                    </Texto>
+                  )}
+                </View>
+              </Superficie>
+            ))}
+            <Aviso
+              icone="escudo"
+              texto="Aprovar cria a conta do aluno, o cartão virtual e o acesso do responsável — tudo registrado na auditoria."
+            />
+          </View>
+        ))}
+
       {secao === 'cadastros' && (
         <View style={{ gap: 16 }}>
           <Superficie preenchimento={16}>
@@ -303,8 +437,92 @@ export default function PainelAdministrativo() {
           </Texto>
         </Superficie>
       )}
+      <Folha
+        visivel={!!alvo}
+        aoFechar={() => setAlvo(null)}
+        titulo="Aprovar e criar as contas"
+        subtitulo={
+          alvo
+            ? `${alvo.aluno.nome} · ${alvo.aluno.turma} · matrícula ${alvo.aluno.matricula}`
+            : undefined
+        }
+      >
+        <View style={{ gap: 12 }}>
+          <Aviso
+            icone="escudo"
+            texto="Confira a matrícula e a turma no sistema acadêmico antes de aprovar. A conta nasce com saldo zero e os limites do segmento."
+          />
+          <Botao
+            titulo="Confirmar e criar"
+            carregando={ocupado}
+            onPress={() => alvo && void aprovar(alvo)}
+          />
+          <Botao titulo="Agora não" tipo="fantasma" onPress={() => setAlvo(null)} />
+        </View>
+      </Folha>
+
+      <Folha
+        visivel={!!aprovada}
+        aoFechar={() => setAprovada(null)}
+        titulo="Contas criadas"
+        subtitulo="Entregue estes dados ao responsável."
+      >
+        <View style={{ gap: 12 }}>
+          <Superficie preenchimento={16} variante="plana">
+            <View style={{ gap: 10 }}>
+              <ItemPedido rotulo="Aluno" valor={aprovada?.aluno.nome ?? ''} />
+              <ItemPedido rotulo="Código de vínculo" valor={aprovada?.codigoVinculo ?? '—'} />
+              <ItemPedido
+                rotulo="Senha provisória"
+                valor={aprovada?.senhaProvisoria ?? 'acesso já existente'}
+              />
+            </View>
+          </Superficie>
+          <Aviso
+            icone="cadeado"
+            texto="A senha provisória aparece uma única vez e deve ser trocada no primeiro acesso."
+          />
+          <Botao titulo="Concluir" onPress={() => setAprovada(null)} />
+        </View>
+      </Folha>
+
+      <Folha
+        visivel={!!recusando}
+        aoFechar={() => setRecusando(null)}
+        titulo="Recusar pedido"
+        subtitulo="O motivo vai para o responsável e fica na auditoria."
+      >
+        <View style={{ gap: 12 }}>
+          <Campo
+            rotulo="Motivo"
+            placeholder="Ex.: matrícula não localizada"
+            value={motivo}
+            onChangeText={setMotivo}
+          />
+          <Botao
+            titulo="Confirmar recusa"
+            tipo="perigo"
+            carregando={ocupado}
+            disabled={motivo.trim().length < 5}
+            onPress={() => void recusar()}
+          />
+        </View>
+      </Folha>
       <View style={{ height: 28 }} />
     </Tela>
+  );
+}
+
+function ItemPedido({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <Texto variante="legenda" suave style={{ flex: 1 }}>
+        {rotulo}
+      </Texto>
+      <Texto variante="corpoForte" style={{ flexShrink: 1, textAlign: 'right' }}>
+        {valor}
+      </Texto>
+    </View>
   );
 }
 

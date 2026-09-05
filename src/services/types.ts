@@ -1,5 +1,7 @@
 import type {
   Aluno,
+  SolicitacaoConta,
+  StatusSolicitacao,
   Cartao,
   Cobranca,
   Conta,
@@ -31,6 +33,7 @@ export interface Api {
   lojista: LojistaApi;
   responsavel: ResponsavelApi;
   admin: AdminApi;
+  solicitacoes: SolicitacoesApi;
   notificacoes: NotificacoesApi;
   /** Só existe no mock: restaura a base de demonstração. */
   reiniciarDemo?: () => Promise<void>;
@@ -171,6 +174,23 @@ export interface AdminApi {
   lojas(): Promise<Loja[]>;
   operadores(): Promise<Usuario[]>;
   auditoria(): Promise<{ id: string; autor: string; acao: string; criadoEm: string }[]>;
+}
+
+export interface NovaSolicitacao {
+  responsavel: SolicitacaoConta['responsavel'];
+  aluno: SolicitacaoConta['aluno'];
+  consentimentoLgpd: boolean;
+}
+
+export interface SolicitacoesApi {
+  /** Enviada pelo responsável, sem login. */
+  criar(dados: NovaSolicitacao): Promise<SolicitacaoConta>;
+  /** Consulta pública pelo número de protocolo. */
+  consultar(protocolo: string): Promise<SolicitacaoConta | null>;
+  listar(status?: StatusSolicitacao): Promise<SolicitacaoConta[]>;
+  /** Cria aluno, conta, cartão e o acesso do responsável de uma vez. */
+  aprovar(id: string, avaliadorId: string): Promise<SolicitacaoConta>;
+  recusar(id: string, avaliadorId: string, motivo: string): Promise<SolicitacaoConta>;
 }
 
 export interface NotificacoesApi {
